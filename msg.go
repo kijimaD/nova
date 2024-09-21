@@ -1,30 +1,23 @@
 package msg
 
-import "time"
-
-type QueueState string
-
-const (
-	QueueStateNone   = QueueState("NONE")
-	QueueStateFinish = QueueState("FINISH")
-)
-
+// queueて名前、おかしいかもしれない
+// 文字列は構造体にしたい
 type Queue struct {
+	// イベント群
 	events []Event
 	// 現在の表示文字列
+	// アニメーション用に1文字ずつ増えていく
 	buf string
-	// trueの場合キューを処理する
-	active bool
 }
 
 func NewQueue(events []Event) Queue {
 	q := Queue{
-		active: true,
 		events: events,
 	}
 	return q
 }
 
+// スクリプトからキューを初期化する
 func NewQueueFromText(text string) Queue {
 	l := NewLexer(text)
 	p := NewParser(l)
@@ -34,35 +27,42 @@ func NewQueueFromText(text string) Queue {
 	return NewQueue(e.Events)
 }
 
-// キューの先端にあるイベントを実行する
-func (q *Queue) RunHead() QueueState {
-	if !q.active {
-		return QueueStateNone
-	}
-	if len(q.events) == 0 {
-		return QueueStateFinish
-	}
-	q.events[0].PreHook()
-	q.events[0].Run(q)
+// キューの先端を取り出して実行する
+// popしないこともあるので、名前に合っていない
+func (q *Queue) Pop() Event {
+	e := q.events[0]
 
-	return QueueStateNone
+	switch v := e.(type) {
+	case *msgEmit:
+		switch v.status {
+		case TaskNotRunning:
+			// 未実行の場合実行する
+			v.Run(q)
+			v.status = TaskRunning
+		case TaskRunning:
+			v.status = TaskFinish
+		case TaskFinish:
+			// 終了
+			q.events = append(q.events[:0], q.events[1:]...)
+		}
+	default:
+		e.Run(q)
+		// TODO: この書き方変な気がする
+		// ここで先端を取り出すが、そうするとHeadは次を表すことになるので、おかしい
+		q.events = append(q.events[:0], q.events[1:]...)
+	}
+
+	return e
 }
 
+// キューの先頭を表示だけする
+// Head,いらないか
 func (q *Queue) Head() Event {
 	if len(q.events) == 0 {
 		return &notImplement{}
 	}
-	return q.events[0]
-}
 
-// キューの先端を消して先に進める
-func (q *Queue) Pop() QueueState {
-	if len(q.events) == 0 {
-		return QueueStateFinish
-	}
-	q.events = append(q.events[:0], q.events[1:]...)
-	q.activate()
-	return QueueStateNone
+	return q.events[0]
 }
 
 func (q *Queue) Display() string {
@@ -71,133 +71,4 @@ func (q *Queue) Display() string {
 
 func (q *Queue) SetEvents(es []Event) {
 	q.events = es
-}
-
-func (q *Queue) activate() {
-	q.active = true
-}
-
-func (q *Queue) deactivate() {
-	q.active = false
-}
-
-type Event interface {
-	PreHook()
-	Run(*Queue)
-}
-
-// ================
-
-// メッセージ表示
-type msgEmit struct {
-	body []rune
-	pos  int
-	// 自動改行カウント
-	nlCount int
-}
-
-func (e *msgEmit) PreHook() {
-	return
-}
-
-// 1つ位置を進めて1文字得る
-func (e *msgEmit) Run(q *Queue) {
-	const width = 14
-
-	q.buf += string(e.body[e.pos])
-	// 意図的に挿入された改行がある場合はリセット
-	if string(e.body[e.pos]) == "\n" {
-		e.nlCount = 0
-	}
-	if e.nlCount%width == width-1 {
-		q.buf += "\n"
-	}
-
-	e.pos++
-	e.nlCount++
-
-	if e.pos > len(e.body)-1 {
-		q.deactivate()
-	}
-	return
-}
-
-// ================
-
-// ページをフラッシュする
-type flush struct{}
-
-func (e *flush) PreHook() {
-	return
-}
-
-func (e *flush) Run(q *Queue) {
-	q.buf = ""
-	q.deactivate()
-	q.Pop()
-	return
-}
-
-// ================
-
-type ChangeBg struct {
-	Source string
-}
-
-func (c *ChangeBg) PreHook() {
-	return
-}
-
-func (c *ChangeBg) Run(q *Queue) {
-	q.Pop()
-	return
-}
-
-// ================
-
-// 行末クリック待ち
-type lineEndWait struct{}
-
-func (l *lineEndWait) PreHook() {
-	return
-}
-
-func (l *lineEndWait) Run(q *Queue) {
-	q.buf = q.buf + "\n"
-	q.deactivate()
-	q.Pop()
-	return
-}
-
-// ================
-
-// 未実装
-type notImplement struct{}
-
-func (l *notImplement) PreHook() {
-	return
-}
-
-func (l *notImplement) Run(q *Queue) {
-	q.buf = ""
-	q.deactivate()
-	q.Pop()
-	return
-}
-
-// ================
-type wait struct {
-	durationMsec time.Duration
-}
-
-func (w *wait) PreHook() {
-	return
-}
-
-func (w *wait) Run(q *Queue) {
-	time.Sleep(w.durationMsec)
-	q.buf = ""
-	q.deactivate()
-	q.Pop()
-	return
 }
