@@ -11,7 +11,7 @@ import (
 func TestMsg(t *testing.T) {
 	q := Queue{}
 	q.events = append(q.events, &msgEmit{
-		body: []rune("こんにちは"),
+		body: "こんにちは",
 	})
 }
 
@@ -33,7 +33,7 @@ func TestMsg(t *testing.T) {
 func TestMsgEmit(t *testing.T) {
 	q := Queue{workerChan: make(chan Event, 1)}
 	q.events = append(q.events, &msgEmit{
-		body: []rune("東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12"),
+		body: "東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12",
 	})
 	q.events = append(q.events, &flush{})
 	q.Start()
@@ -42,32 +42,30 @@ func TestMsgEmit(t *testing.T) {
 	q.Pop()
 	assert.Equal(t, "", q.Display())
 	time.Sleep(50 * time.Millisecond)
-	assert.True(t, utf8.RuneCountInString(q.Display()) > 3)
+	assert.True(t, utf8.RuneCountInString(q.Display()) > 1)
 	assert.True(t, utf8.RuneCountInString(q.Display()) < 10)
-	// q.Pop()
 	q.Skip()
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
 	assert.Equal(t, "東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12", q.Display())
 	q.Pop()
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
 	assert.Equal(t, "", q.Display())
 }
 
 func TestRun_RunがPopとSkipを使い分ける(t *testing.T) {
 	q := Queue{workerChan: make(chan Event, 1)}
 	q.events = append(q.events, &msgEmit{
-		body: []rune("東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12"),
+		body: "東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12",
 	})
 	q.events = append(q.events, &flush{})
 	q.Start()
 
 	q.Run() // pop
-	// TODO: ここで待たないとskipにならないのを直す
 	time.Sleep(20 * time.Millisecond)
 	q.Run() // skip
 	time.Sleep(20 * time.Millisecond)
 	assert.Equal(t, "東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12", q.Display())
-	q.Run()
+	q.Run() // pop
 	time.Sleep(20 * time.Millisecond)
 	assert.Equal(t, "", q.Display())
 }

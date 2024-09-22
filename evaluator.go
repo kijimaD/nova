@@ -42,7 +42,7 @@ func (e *Evaluator) Eval(node Node) Event {
 		e.Events = append(e.Events, eve)
 		return eve
 	case *TextLiteral:
-		m := &msgEmit{body: []rune(node.Value)}
+		m := &msgEmit{body: node.Value}
 		e.Events = append(e.Events, m)
 		return m
 	}

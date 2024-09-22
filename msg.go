@@ -60,15 +60,18 @@ func (q *Queue) Skip() {
 	}
 }
 
-// タスクに合わせてPop()もしくはSkip()する
+// 実行中タスクに合わせてPop()もしくはSkip()する
 func (q *Queue) Run() {
 	switch v := q.cur.(type) {
 	case *msgEmit:
-		switch v.status {
-		case TaskRunning:
+		select {
+		case _, ok := <-v.doneChan:
+			if !ok {
+				// closeしているので終了
+				q.Pop()
+			}
+		default:
 			q.Skip()
-		case TaskFinish:
-			q.Pop()
 		}
 	default:
 		q.Pop()

@@ -26,20 +26,18 @@ const (
 // メッセージ表示
 type msgEmit struct {
 	// パーサーから渡ってきた表示対象の文字列
-	body []rune
+	body string
 	// 表示文字列に送信するバッファ
 	bChan chan string
+	// 終了
+	doneChan chan bool
 	// 自動改行カウント
 	nlCount int
-
-	status    TaskStatus
-	IsAnimate bool
 }
 
 func (e *msgEmit) Run(q *Queue) {
-	e.status = TaskRunning
 	e.bChan = make(chan string, 2048)
-	e.IsAnimate = true
+	e.doneChan = make(chan bool, 1)
 
 	go func() {
 		for b := range e.bChan {
@@ -47,25 +45,28 @@ func (e *msgEmit) Run(q *Queue) {
 		}
 	}()
 
-	// すでにRunが実行されていた場合には即時コピーしたい
-	for {
-		if len(e.body) == 0 {
-			break
-		}
-		e.bChan <- string(e.body[0])
-		e.body = e.body[1:]
+	go func() {
+		for i, char := range e.body {
+			select {
+			case <-e.doneChan:
+				// フラグが立ったら残りの文字を一気に表示
+				e.bChan <- e.body[i:]
 
-		if e.IsAnimate {
-			time.Sleep(10 * time.Millisecond)
+				return
+			default:
+				// フラグが立ってないので1文字ずつ表示
+				e.bChan <- string(char)
+				time.Sleep(10 * time.Millisecond)
+			}
 		}
-	}
-	e.status = TaskFinish
+	}()
 
 	return
 }
 
 func (e *msgEmit) Skip() {
-	e.IsAnimate = false
+	e.doneChan <- true
+	close(e.doneChan)
 }
 
 // ================
