@@ -28,6 +28,8 @@ func TestMsg(t *testing.T) {
 // 	assert.Equal(t, &notImplement{}, q.Pop())
 // }
 
+// いちいちsleepしないといけないのをどうにかしたい
+// テストの場合は同期的にやりたい。終了を通知してくるまで待つとかできないか?
 func TestMsgEmit(t *testing.T) {
 	q := Queue{workerChan: make(chan Event, 1)}
 	q.events = append(q.events, &msgEmit{

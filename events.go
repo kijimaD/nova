@@ -25,18 +25,17 @@ const (
 
 // メッセージ表示
 type msgEmit struct {
+	// パーサーから渡ってきた表示対象の文字列
 	body []rune
+	// 表示文字列に送信するバッファ
+	bChan chan string
 	// 自動改行カウント
 	nlCount int
 
 	status    TaskStatus
-	bChan     chan string
 	IsAnimate bool
 }
 
-// 全部終わっていればPopする
-// 終わってなければSkipする
-// skipどうするか
 func (e *msgEmit) Run(q *Queue) {
 	e.status = TaskRunning
 	e.bChan = make(chan string, 2048)
@@ -45,14 +44,6 @@ func (e *msgEmit) Run(q *Queue) {
 	go func() {
 		for b := range e.bChan {
 			q.buf += b
-		}
-	}()
-
-	go func() {
-		for {
-			// skip := <-e.skipChan
-
-			// finish := <-e.finishChan
 		}
 	}()
 

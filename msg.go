@@ -44,12 +44,7 @@ func (q *Queue) Start() {
 	}()
 }
 
-// キューの先端を取り出して実行する
-// popしないこともあるので、名前に合っていない
-// ワーカーに渡すだけの形式にすればいいのかもしれない
-// q <- task
-// events: すべて
-// now: 処理中
+// 未処理キューの先頭を取り出して処理キューに入れる
 func (q *Queue) Pop() Event {
 	e := q.events[0]
 	q.workerChan <- e
@@ -58,12 +53,14 @@ func (q *Queue) Pop() Event {
 	return e
 }
 
+// 現在処理中のタスクをスキップする
 func (q *Queue) Skip() {
 	if e, ok := q.cur.(Skipper); ok {
 		e.Skip()
 	}
 }
 
+// タスクに合わせてPop()もしくはSkip()する
 func (q *Queue) Run() {
 	switch v := q.cur.(type) {
 	case *msgEmit:
@@ -78,8 +75,7 @@ func (q *Queue) Run() {
 	}
 }
 
-// キューの先頭を表示だけする
-// Head,いらないか
+// 処理中タスクを取得する
 func (q *Queue) Head() Event {
 	return q.cur
 }
