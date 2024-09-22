@@ -8,13 +8,15 @@ type Event interface {
 	Run(*Queue)
 }
 
+type Skipper interface {
+	Skip()
+}
+
 // ================
 
 type TaskStatus string
 
 const (
-	// 未実行
-	TaskNotRunning = TaskStatus("NOT_RUNNING")
 	// 表示アニメーション中
 	TaskRunning = TaskStatus("RUNNING")
 	// メッセージをすべて表示した
@@ -27,16 +29,18 @@ type msgEmit struct {
 	// 自動改行カウント
 	nlCount int
 
-	status TaskStatus
-	bChan  chan string
+	status    TaskStatus
+	bChan     chan string
+	IsAnimate bool
 }
 
 // 全部終わっていればPopする
 // 終わってなければSkipする
+// skipどうするか
 func (e *msgEmit) Run(q *Queue) {
-	e.bChan = make(chan string)
-
-	const width = 14
+	e.status = TaskRunning
+	e.bChan = make(chan string, 2048)
+	e.IsAnimate = true
 
 	go func() {
 		for b := range e.bChan {
@@ -44,32 +48,33 @@ func (e *msgEmit) Run(q *Queue) {
 		}
 	}()
 
-	// 時間でbuf->allへのコピーを実行する
-	// すでにRunが実行されていた場合には即時コピーする
 	go func() {
 		for {
-			if len(e.body) == 0 {
-				break
-			}
-			e.bChan <- string(e.body[0])
-			e.body = e.body[1:]
-			// 意図的に挿入された改行がある場合はカウンタをリセット
-			// if string(e.body[e.pos]) == "\n" {
-			// 	e.nlCount = 0
-			// }
-			// if e.nlCount%width == width-1 {
-			// 	q.buf += "\n"
-			// }
-			// e.pos++
-			// e.nlCount++
+			// skip := <-e.skipChan
 
-			if !(e.status == TaskFinish) {
-				// time.Sleep(100 * time.Millisecond)
-			}
+			// finish := <-e.finishChan
 		}
 	}()
 
+	// すでにRunが実行されていた場合には即時コピーしたい
+	for {
+		if len(e.body) == 0 {
+			break
+		}
+		e.bChan <- string(e.body[0])
+		e.body = e.body[1:]
+
+		if e.IsAnimate {
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+	e.status = TaskFinish
+
 	return
+}
+
+func (e *msgEmit) Skip() {
+	e.IsAnimate = false
 }
 
 // ================
@@ -100,7 +105,6 @@ type lineEndWait struct{}
 
 func (l *lineEndWait) Run(q *Queue) {
 	q.buf = q.buf + "\n"
-	q.Pop()
 	return
 }
 
@@ -111,7 +115,6 @@ type notImplement struct{}
 
 func (l *notImplement) Run(q *Queue) {
 	q.buf = ""
-	q.Pop()
 	return
 }
 
@@ -123,6 +126,5 @@ type wait struct {
 func (w *wait) Run(q *Queue) {
 	time.Sleep(w.durationMsec)
 	q.buf = ""
-	q.Pop()
 	return
 }

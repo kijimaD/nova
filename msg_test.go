@@ -3,6 +3,7 @@ package msg
 import (
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -14,22 +15,59 @@ func TestMsg(t *testing.T) {
 	})
 }
 
-func TestEmit(t *testing.T) {
-	q := Queue{}
+// func TestPop(t *testing.T) {
+// 	q := Queue{}
+// 	q.events = append(q.events, &flush{})
+// 	q.events = append(q.events, &notImplement{})
+// 	q.events = append(q.events, &flush{})
+// 	q.events = append(q.events, &notImplement{})
+
+// 	assert.Equal(t, &flush{}, q.Pop())
+// 	assert.Equal(t, &notImplement{}, q.Pop())
+// 	assert.Equal(t, &flush{}, q.Pop())
+// 	assert.Equal(t, &notImplement{}, q.Pop())
+// }
+
+func TestMsgEmit(t *testing.T) {
+	q := Queue{workerChan: make(chan Event, 1)}
 	q.events = append(q.events, &msgEmit{
-		body:   []rune("東京"),
-		status: TaskNotRunning,
+		body: []rune("東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12"),
 	})
 	q.events = append(q.events, &flush{})
-	q.events = append(q.events, &msgEmit{
-		body:   []rune("京都"),
-		status: TaskNotRunning,
-	})
+	q.Start()
 
+	assert.Equal(t, "", q.Display())
 	q.Pop()
 	assert.Equal(t, "", q.Display())
-	time.Sleep(80 * time.Millisecond)
-	assert.Equal(t, "東京", q.Display())
+	time.Sleep(50 * time.Millisecond)
+	assert.True(t, utf8.RuneCountInString(q.Display()) > 3)
+	assert.True(t, utf8.RuneCountInString(q.Display()) < 10)
+	// q.Pop()
+	q.Skip()
+	time.Sleep(20 * time.Millisecond)
+	assert.Equal(t, "東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12", q.Display())
+	q.Pop()
+	time.Sleep(20 * time.Millisecond)
+	assert.Equal(t, "", q.Display())
+}
+
+func TestRun_RunがPopとSkipを使い分ける(t *testing.T) {
+	q := Queue{workerChan: make(chan Event, 1)}
+	q.events = append(q.events, &msgEmit{
+		body: []rune("東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12"),
+	})
+	q.events = append(q.events, &flush{})
+	q.Start()
+
+	q.Run() // pop
+	// TODO: ここで待たないとskipにならないのを直す
+	time.Sleep(20 * time.Millisecond)
+	q.Run() // skip
+	time.Sleep(20 * time.Millisecond)
+	assert.Equal(t, "東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12", q.Display())
+	q.Run()
+	time.Sleep(20 * time.Millisecond)
+	assert.Equal(t, "", q.Display())
 }
 
 // func TestWait(t *testing.T) {

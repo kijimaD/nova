@@ -3,16 +3,21 @@ package msg
 // queueて名前、おかしいかもしれない
 // 文字列は構造体にしたい
 type Queue struct {
+	workerChan chan Event
 	// イベント群
 	events []Event
 	// 現在の表示文字列
 	// アニメーション用に1文字ずつ増えていく
 	buf string
+
+	// 現在実行中
+	cur Event
 }
 
 func NewQueue(events []Event) Queue {
 	q := Queue{
-		events: events,
+		events:     events,
+		workerChan: make(chan Event, 1),
 	}
 	return q
 }
@@ -27,42 +32,56 @@ func NewQueueFromText(text string) Queue {
 	return NewQueue(e.Events)
 }
 
+func (q *Queue) Start() {
+	go func() {
+		for {
+			select {
+			case event := <-q.workerChan:
+				q.cur = event
+				event.Run(q)
+			}
+		}
+	}()
+}
+
 // キューの先端を取り出して実行する
 // popしないこともあるので、名前に合っていない
+// ワーカーに渡すだけの形式にすればいいのかもしれない
+// q <- task
+// events: すべて
+// now: 処理中
 func (q *Queue) Pop() Event {
 	e := q.events[0]
-
-	switch v := e.(type) {
-	case *msgEmit:
-		switch v.status {
-		case TaskNotRunning:
-			// 未実行の場合実行する
-			v.Run(q)
-			v.status = TaskRunning
-		case TaskRunning:
-			v.status = TaskFinish
-		case TaskFinish:
-			// 終了
-			q.events = append(q.events[:0], q.events[1:]...)
-		}
-	default:
-		e.Run(q)
-		// TODO: この書き方変な気がする
-		// ここで先端を取り出すが、そうするとHeadは次を表すことになるので、おかしい
-		q.events = append(q.events[:0], q.events[1:]...)
-	}
+	q.workerChan <- e
+	q.events = append(q.events[:0], q.events[1:]...)
 
 	return e
+}
+
+func (q *Queue) Skip() {
+	if e, ok := q.cur.(Skipper); ok {
+		e.Skip()
+	}
+}
+
+func (q *Queue) Run() {
+	switch v := q.cur.(type) {
+	case *msgEmit:
+		switch v.status {
+		case TaskRunning:
+			q.Skip()
+		case TaskFinish:
+			q.Pop()
+		}
+	default:
+		q.Pop()
+	}
 }
 
 // キューの先頭を表示だけする
 // Head,いらないか
 func (q *Queue) Head() Event {
-	if len(q.events) == 0 {
-		return &notImplement{}
-	}
-
-	return q.events[0]
+	return q.cur
 }
 
 func (q *Queue) Display() string {
