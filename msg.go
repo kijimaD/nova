@@ -25,6 +25,7 @@ func NewQueue() Queue {
 		events:     []Event{},
 		workerChan: make(chan Event, 1024),
 	}
+
 	return q
 }
 
@@ -40,6 +41,7 @@ func NewQueueFromText(text string) Queue {
 	return q
 }
 
+// ワーカーを開始する
 func (q *Queue) Start() {
 	go func() {
 		for {

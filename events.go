@@ -34,6 +34,14 @@ type msgEmit struct {
 	nlCount int
 }
 
+func NewMsgEmit(body string) msgEmit {
+	return msgEmit{
+		body:     body,
+		doneChan: make(chan bool, 1),
+		nlCount:  0,
+	}
+}
+
 func (e *msgEmit) Run(q *Queue) {
 	if e.doneChan == nil {
 		log.Fatal("doneChan is nil")

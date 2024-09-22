@@ -8,13 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMsg(t *testing.T) {
-	q := Queue{}
-	q.events = append(q.events, &msgEmit{
-		body: "こんにちは",
-	})
-}
-
 // func TestPop(t *testing.T) {
 // 	q := Queue{}
 // 	q.events = append(q.events, &flush{})
@@ -28,19 +21,14 @@ func TestMsg(t *testing.T) {
 // 	assert.Equal(t, &notImplement{}, q.Pop())
 // }
 
-// いちいちsleepしないといけないのをどうにかしたい
-// テストの場合は同期的にやりたい。終了を通知してくるまで待つとかできないか?
-func TestMsgEmit(t *testing.T) {
+func TestMsgEmit_Skipできる(t *testing.T) {
 	q := NewQueue()
-	q.events = append(q.events, &msgEmit{
-		body:     "東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12",
-		doneChan: make(chan bool, 1),
-	})
+	q.events = append(q.events, GetPtr(NewMsgEmit("東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12")))
 	q.events = append(q.events, &flush{})
 	q.Start()
 
 	assert.Equal(t, "", q.Display())
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(30 * time.Millisecond)
 	assert.True(t, utf8.RuneCountInString(q.Display()) > 1)
 	assert.True(t, utf8.RuneCountInString(q.Display()) < 10)
 	q.Skip()
@@ -53,14 +41,14 @@ func TestMsgEmit(t *testing.T) {
 
 func TestRun_RunがPopとSkipを使い分ける(t *testing.T) {
 	q := NewQueue()
-	q.events = append(q.events, &msgEmit{
-		body:     "東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12",
-		doneChan: make(chan bool, 1),
-	})
+	q.events = append(q.events, GetPtr(NewMsgEmit("東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12")))
 	q.events = append(q.events, &flush{})
 	q.Start()
 
-	time.Sleep(20 * time.Millisecond)
+	assert.Equal(t, "", q.Display())
+	time.Sleep(30 * time.Millisecond)
+	assert.True(t, utf8.RuneCountInString(q.Display()) > 1)
+	assert.True(t, utf8.RuneCountInString(q.Display()) < 10)
 	q.Run() // skip
 	q.Wait()
 	assert.Equal(t, "東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12", q.Display())
