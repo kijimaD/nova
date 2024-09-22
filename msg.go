@@ -45,7 +45,6 @@ func (q *Queue) Start() {
 		for {
 			select {
 			case event := <-q.workerChan:
-				q.cur = event
 				event.Run(q)
 			}
 		}
@@ -55,8 +54,9 @@ func (q *Queue) Start() {
 // 未処理キューの先頭を取り出して処理キューに入れる
 func (q *Queue) Pop() Event {
 	e := q.events[0]
-	q.wg.Add(1)
+	q.cur = e
 	q.workerChan <- e
+	q.wg.Add(1)
 	q.events = append(q.events[:0], q.events[1:]...)
 
 	return e
