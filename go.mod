@@ -1,6 +1,6 @@
 module github.com/kijimaD/nov
 
-go 1.21.3
+go 1.20
 
 require github.com/stretchr/testify v1.9.0
 

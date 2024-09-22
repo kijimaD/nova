@@ -24,7 +24,7 @@ func TestEval(t *testing.T) {
 	for _, e := range e.Events {
 		switch event := e.(type) {
 		case *msgEmit:
-			results = append(results, string(event.body))
+			results = append(results, event.body)
 		case *flush:
 			results = append(results, "flush")
 		case *lineEndWait:

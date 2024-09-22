@@ -1,68 +1,105 @@
 package msg
 
-import "time"
-
-type QueueState string
-
-const (
-	QueueStateNone   = QueueState("NONE")
-	QueueStateFinish = QueueState("FINISH")
+import (
+	"sync"
 )
 
+// queueて名前、おかしいかもしれない
+// 文字列は構造体にしたい
 type Queue struct {
+	workerChan chan Event
+	// イベント群
 	events []Event
 	// 現在の表示文字列
+	// アニメーション用に1文字ずつ増えていく
 	buf string
-	// trueの場合キューを処理する
-	active bool
+
+	// 現在実行中
+	cur Event
+
+	wg sync.WaitGroup
 }
 
-func NewQueue(events []Event) Queue {
+func NewQueue() Queue {
 	q := Queue{
-		active: true,
-		events: events,
+		events:     []Event{},
+		workerChan: make(chan Event, 1024),
 	}
+
 	return q
 }
 
+// スクリプトからキューを初期化する
 func NewQueueFromText(text string) Queue {
 	l := NewLexer(text)
 	p := NewParser(l)
 	program := p.ParseProgram()
 	e := NewEvaluator(program)
+	q := NewQueue()
+	q.events = e.Events
 
-	return NewQueue(e.Events)
+	return q
 }
 
-// キューの先端にあるイベントを実行する
-func (q *Queue) RunHead() QueueState {
-	if !q.active {
-		return QueueStateNone
-	}
-	if len(q.events) == 0 {
-		return QueueStateFinish
-	}
-	q.events[0].PreHook()
-	q.events[0].Run(q)
+// ワーカーを開始する
+func (q *Queue) Start() {
+	go func() {
+		for {
+			select {
+			case event := <-q.workerChan:
+				event.Run(q)
+			}
+		}
+	}()
 
-	return QueueStateNone
+	q.Pop()
 }
 
-func (q *Queue) Head() Event {
-	if len(q.events) == 0 {
-		return &notImplement{}
-	}
-	return q.events[0]
-}
-
-// キューの先端を消して先に進める
-func (q *Queue) Pop() QueueState {
-	if len(q.events) == 0 {
-		return QueueStateFinish
-	}
+// 未処理キューの先頭を取り出して処理キューに入れる
+func (q *Queue) Pop() Event {
+	e := q.events[0]
+	q.cur = e
+	q.wg.Add(1)
+	q.workerChan <- e
 	q.events = append(q.events[:0], q.events[1:]...)
-	q.activate()
-	return QueueStateNone
+
+	return e
+}
+
+// 現在処理中のタスクをスキップする
+func (q *Queue) Skip() {
+	if e, ok := q.cur.(Skipper); ok {
+		e.Skip()
+	}
+}
+
+// 実行中タスクに合わせてPop()もしくはSkip()する
+func (q *Queue) Run() {
+	switch v := q.cur.(type) {
+	case *msgEmit:
+		select {
+		case _, ok := <-v.doneChan:
+			if !ok {
+				// closeしているので終了
+				q.Pop()
+			}
+		default:
+			q.Skip()
+		}
+	default:
+		q.Pop()
+		q.wg.Done()
+	}
+}
+
+// すべてのジョブが処理されるまで待機
+func (q *Queue) Wait() {
+	q.wg.Wait()
+}
+
+// 処理中タスクを取得する
+func (q *Queue) Head() Event {
+	return q.cur
 }
 
 func (q *Queue) Display() string {
@@ -71,133 +108,4 @@ func (q *Queue) Display() string {
 
 func (q *Queue) SetEvents(es []Event) {
 	q.events = es
-}
-
-func (q *Queue) activate() {
-	q.active = true
-}
-
-func (q *Queue) deactivate() {
-	q.active = false
-}
-
-type Event interface {
-	PreHook()
-	Run(*Queue)
-}
-
-// ================
-
-// メッセージ表示
-type msgEmit struct {
-	body []rune
-	pos  int
-	// 自動改行カウント
-	nlCount int
-}
-
-func (e *msgEmit) PreHook() {
-	return
-}
-
-// 1つ位置を進めて1文字得る
-func (e *msgEmit) Run(q *Queue) {
-	const width = 14
-
-	q.buf += string(e.body[e.pos])
-	// 意図的に挿入された改行がある場合はリセット
-	if string(e.body[e.pos]) == "\n" {
-		e.nlCount = 0
-	}
-	if e.nlCount%width == width-1 {
-		q.buf += "\n"
-	}
-
-	e.pos++
-	e.nlCount++
-
-	if e.pos > len(e.body)-1 {
-		q.deactivate()
-	}
-	return
-}
-
-// ================
-
-// ページをフラッシュする
-type flush struct{}
-
-func (e *flush) PreHook() {
-	return
-}
-
-func (e *flush) Run(q *Queue) {
-	q.buf = ""
-	q.deactivate()
-	q.Pop()
-	return
-}
-
-// ================
-
-type ChangeBg struct {
-	Source string
-}
-
-func (c *ChangeBg) PreHook() {
-	return
-}
-
-func (c *ChangeBg) Run(q *Queue) {
-	q.Pop()
-	return
-}
-
-// ================
-
-// 行末クリック待ち
-type lineEndWait struct{}
-
-func (l *lineEndWait) PreHook() {
-	return
-}
-
-func (l *lineEndWait) Run(q *Queue) {
-	q.buf = q.buf + "\n"
-	q.deactivate()
-	q.Pop()
-	return
-}
-
-// ================
-
-// 未実装
-type notImplement struct{}
-
-func (l *notImplement) PreHook() {
-	return
-}
-
-func (l *notImplement) Run(q *Queue) {
-	q.buf = ""
-	q.deactivate()
-	q.Pop()
-	return
-}
-
-// ================
-type wait struct {
-	durationMsec time.Duration
-}
-
-func (w *wait) PreHook() {
-	return
-}
-
-func (w *wait) Run(q *Queue) {
-	time.Sleep(w.durationMsec)
-	q.buf = ""
-	q.deactivate()
-	q.Pop()
-	return
 }
