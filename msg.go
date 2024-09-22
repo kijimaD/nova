@@ -1,5 +1,9 @@
 package msg
 
+import (
+	"sync"
+)
+
 // queueて名前、おかしいかもしれない
 // 文字列は構造体にしたい
 type Queue struct {
@@ -12,11 +16,13 @@ type Queue struct {
 
 	// 現在実行中
 	cur Event
+
+	wg sync.WaitGroup
 }
 
-func NewQueue(events []Event) Queue {
+func NewQueue() Queue {
 	q := Queue{
-		events:     events,
+		events:     []Event{},
 		workerChan: make(chan Event, 1),
 	}
 	return q
@@ -28,8 +34,10 @@ func NewQueueFromText(text string) Queue {
 	p := NewParser(l)
 	program := p.ParseProgram()
 	e := NewEvaluator(program)
+	q := NewQueue()
+	q.events = e.Events
 
-	return NewQueue(e.Events)
+	return q
 }
 
 func (q *Queue) Start() {
@@ -47,6 +55,7 @@ func (q *Queue) Start() {
 // 未処理キューの先頭を取り出して処理キューに入れる
 func (q *Queue) Pop() Event {
 	e := q.events[0]
+	q.wg.Add(1)
 	q.workerChan <- e
 	q.events = append(q.events[:0], q.events[1:]...)
 
@@ -75,7 +84,13 @@ func (q *Queue) Run() {
 		}
 	default:
 		q.Pop()
+		q.wg.Done()
 	}
+}
+
+// すべてのジョブが処理されるまで待機
+func (q *Queue) Wait() {
+	q.wg.Wait()
 }
 
 // 処理中タスクを取得する

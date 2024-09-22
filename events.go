@@ -27,8 +27,6 @@ const (
 type msgEmit struct {
 	// パーサーから渡ってきた表示対象の文字列
 	body string
-	// 表示文字列に送信するバッファ
-	bChan chan string
 	// 終了
 	doneChan chan bool
 	// 自動改行カウント
@@ -36,29 +34,24 @@ type msgEmit struct {
 }
 
 func (e *msgEmit) Run(q *Queue) {
-	e.bChan = make(chan string, 2048)
 	e.doneChan = make(chan bool, 1)
-
-	go func() {
-		for b := range e.bChan {
-			q.buf += b
-		}
-	}()
 
 	go func() {
 		for i, char := range e.body {
 			select {
 			case <-e.doneChan:
 				// フラグが立ったら残りの文字を一気に表示
-				e.bChan <- e.body[i:]
+				q.buf += e.body[i:]
+				q.wg.Done()
 
 				return
 			default:
 				// フラグが立ってないので1文字ずつ表示
-				e.bChan <- string(char)
+				q.buf += string(char)
 				time.Sleep(10 * time.Millisecond)
 			}
 		}
+		q.wg.Done()
 	}()
 
 	return
