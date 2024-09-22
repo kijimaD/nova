@@ -69,6 +69,7 @@ type flush struct{}
 
 func (c *flush) Run(q *Queue) {
 	q.buf = ""
+	q.wg.Done()
 	return
 }
 

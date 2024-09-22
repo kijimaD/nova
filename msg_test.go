@@ -33,7 +33,8 @@ func TestMsg(t *testing.T) {
 func TestMsgEmit(t *testing.T) {
 	q := NewQueue()
 	q.events = append(q.events, &msgEmit{
-		body: "東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12",
+		body:     "東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12",
+		doneChan: make(chan bool, 1),
 	})
 	q.events = append(q.events, &flush{})
 	q.Start()
@@ -46,24 +47,25 @@ func TestMsgEmit(t *testing.T) {
 	q.Wait()
 	assert.Equal(t, "東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12", q.Display())
 	q.Pop()
-	time.Sleep(50 * time.Millisecond)
+	q.Wait()
 	assert.Equal(t, "", q.Display())
 }
 
 func TestRun_RunがPopとSkipを使い分ける(t *testing.T) {
 	q := NewQueue()
 	q.events = append(q.events, &msgEmit{
-		body: "東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12",
+		body:     "東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12",
+		doneChan: make(chan bool, 1),
 	})
 	q.events = append(q.events, &flush{})
 	q.Start()
 
 	time.Sleep(20 * time.Millisecond)
 	q.Run() // skip
-	time.Sleep(20 * time.Millisecond)
+	q.Wait()
 	assert.Equal(t, "東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12", q.Display())
 	q.Run() // pop
-	time.Sleep(20 * time.Millisecond)
+	q.Wait()
 	assert.Equal(t, "", q.Display())
 }
 
