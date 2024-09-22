@@ -39,8 +39,6 @@ func TestMsgEmit(t *testing.T) {
 	q.Start()
 
 	assert.Equal(t, "", q.Display())
-	q.Pop()
-	assert.Equal(t, "", q.Display())
 	time.Sleep(50 * time.Millisecond)
 	assert.True(t, utf8.RuneCountInString(q.Display()) > 1)
 	assert.True(t, utf8.RuneCountInString(q.Display()) < 10)
@@ -60,9 +58,6 @@ func TestRun_RunがPopとSkipを使い分ける(t *testing.T) {
 	q.events = append(q.events, &flush{})
 	q.Start()
 
-	q.Pop()
-	// FIXME: 最初はPopでないといけない...
-	// q.Run() // pop
 	time.Sleep(20 * time.Millisecond)
 	q.Run() // skip
 	time.Sleep(20 * time.Millisecond)
