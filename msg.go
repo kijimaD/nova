@@ -23,7 +23,7 @@ type Queue struct {
 func NewQueue() Queue {
 	q := Queue{
 		events:     []Event{},
-		workerChan: make(chan Event, 1),
+		workerChan: make(chan Event, 1024),
 	}
 	return q
 }
@@ -57,8 +57,8 @@ func (q *Queue) Start() {
 func (q *Queue) Pop() Event {
 	e := q.events[0]
 	q.cur = e
-	q.workerChan <- e
 	q.wg.Add(1)
+	q.workerChan <- e
 	q.events = append(q.events[:0], q.events[1:]...)
 
 	return e

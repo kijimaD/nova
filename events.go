@@ -1,6 +1,7 @@
 package msg
 
 import (
+	"log"
 	"time"
 )
 
@@ -34,25 +35,25 @@ type msgEmit struct {
 }
 
 func (e *msgEmit) Run(q *Queue) {
-	e.doneChan = make(chan bool, 1)
+	if e.doneChan == nil {
+		log.Fatal("doneChan is nil")
+	}
 
-	go func() {
-		for i, char := range e.body {
-			select {
-			case <-e.doneChan:
-				// フラグが立ったら残りの文字を一気に表示
-				q.buf += e.body[i:]
-				q.wg.Done()
+	for i, char := range e.body {
+		select {
+		case <-e.doneChan:
+			// フラグが立ったら残りの文字を一気に表示
+			q.buf += e.body[i:]
+			q.wg.Done()
 
-				return
-			default:
-				// フラグが立ってないので1文字ずつ表示
-				q.buf += string(char)
-				time.Sleep(10 * time.Millisecond)
-			}
+			return
+		default:
+			// フラグが立ってないので1文字ずつ表示
+			q.buf += string(char)
+			time.Sleep(20 * time.Millisecond)
 		}
-		q.wg.Done()
-	}()
+	}
+	q.wg.Done()
 
 	return
 }
