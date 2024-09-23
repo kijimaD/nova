@@ -218,6 +218,10 @@ func (p *Parser) parseFunctionParameters() ast.NamedParams {
 		if p.peekTokenIs(token.RBRACKET) {
 			break
 		}
+		if p.peekTokenIs(token.EOF) {
+			log.Fatal("対応する右ブラケットが存在しないため、末尾まで到達した")
+		}
+
 		p.nextToken()
 	}
 

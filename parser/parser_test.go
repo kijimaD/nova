@@ -55,8 +55,8 @@ func TestParsingIndexExpressions(t *testing.T) {
 	}
 }
 
-func TestParsingCmdExpressionImage(t *testing.T) {
-	input := `[image a="value1" b="value2" c="test.png"]`
+func TestParsingCmdExpression(t *testing.T) {
+	input := `[example a="value1" b="value2" c="test.png"]`
 
 	l := lexer.NewLexer(input)
 	p := NewParser(l)
@@ -68,7 +68,7 @@ func TestParsingCmdExpressionImage(t *testing.T) {
 
 	f, ok := stmt.Expression.(*ast.FunctionLiteral)
 	assert.True(t, ok)
-	assert.Equal(t, "image", f.FuncName.Value)
+	assert.Equal(t, "example", f.FuncName.Value)
 	assert.Equal(t, "value1", f.Parameters.Map["a"])
 	assert.Equal(t, "value2", f.Parameters.Map["b"])
 	assert.Equal(t, "test.png", f.Parameters.Map["c"])
