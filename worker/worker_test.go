@@ -1,6 +1,7 @@
-package msg
+package worker
 
 import (
+	"msg/utils"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -23,8 +24,8 @@ import (
 
 func TestMsgEmit_Skipできる(t *testing.T) {
 	q := NewQueue()
-	q.events = append(q.events, GetPtr(NewMsgEmit("東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12")))
-	q.events = append(q.events, &flush{})
+	q.Events = append(q.Events, utils.GetPtr(NewMsgEmit("東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12")))
+	q.Events = append(q.Events, &Flush{})
 	q.Start()
 
 	assert.Equal(t, "", q.Display())
@@ -41,8 +42,8 @@ func TestMsgEmit_Skipできる(t *testing.T) {
 
 func TestRun_RunがPopとSkipを使い分ける(t *testing.T) {
 	q := NewQueue()
-	q.events = append(q.events, GetPtr(NewMsgEmit("東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12")))
-	q.events = append(q.events, &flush{})
+	q.Events = append(q.Events, utils.GetPtr(NewMsgEmit("東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12")))
+	q.Events = append(q.Events, &Flush{})
 	q.Start()
 
 	assert.Equal(t, "", q.Display())
@@ -59,11 +60,11 @@ func TestRun_RunがPopとSkipを使い分ける(t *testing.T) {
 
 // func TestWait(t *testing.T) {
 // 	q := Queue{}
-// 	q.events = append(q.events, &msgEmit{
+// 	q.Events = append(q.Events, &msgEmit{
 // 		body: []rune("東京"),
 // 	})
-// 	q.events = append(q.events, &flush{})
-// 	q.events = append(q.events, &msgEmit{
+// 	q.Events = append(q.Events, &flush{})
+// 	q.Events = append(q.Events, &msgEmit{
 // 		body: []rune("京都"),
 // 	})
 // }

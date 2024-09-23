@@ -1,4 +1,4 @@
-package msg
+package token
 
 type TokenType string
 

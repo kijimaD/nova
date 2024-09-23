@@ -1,4 +1,4 @@
-package msg
+package worker
 
 import (
 	"sync"
@@ -9,7 +9,7 @@ import (
 type Queue struct {
 	workerChan chan Event
 	// イベント群
-	events []Event
+	Events []Event
 	// 現在の表示文字列
 	// アニメーション用に1文字ずつ増えていく
 	buf string
@@ -22,21 +22,9 @@ type Queue struct {
 
 func NewQueue() Queue {
 	q := Queue{
-		events:     []Event{},
+		Events:     []Event{},
 		workerChan: make(chan Event, 1024),
 	}
-
-	return q
-}
-
-// スクリプトからキューを初期化する
-func NewQueueFromText(text string) Queue {
-	l := NewLexer(text)
-	p := NewParser(l)
-	program := p.ParseProgram()
-	e := NewEvaluator(program)
-	q := NewQueue()
-	q.events = e.Events
 
 	return q
 }
@@ -57,11 +45,11 @@ func (q *Queue) Start() {
 
 // 未処理キューの先頭を取り出して処理キューに入れる
 func (q *Queue) Pop() Event {
-	e := q.events[0]
+	e := q.Events[0]
 	q.cur = e
 	q.wg.Add(1)
 	q.workerChan <- e
-	q.events = append(q.events[:0], q.events[1:]...)
+	q.Events = append(q.Events[:0], q.Events[1:]...)
 
 	return e
 }
@@ -76,9 +64,9 @@ func (q *Queue) Skip() {
 // 実行中タスクに合わせてPop()もしくはSkip()する
 func (q *Queue) Run() {
 	switch v := q.cur.(type) {
-	case *msgEmit:
+	case *MsgEmit:
 		select {
-		case _, ok := <-v.doneChan:
+		case _, ok := <-v.DoneChan:
 			if !ok {
 				// closeしているので終了
 				q.Pop()
@@ -107,5 +95,5 @@ func (q *Queue) Display() string {
 }
 
 func (q *Queue) SetEvents(es []Event) {
-	q.events = es
+	q.Events = es
 }

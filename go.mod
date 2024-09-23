@@ -1,4 +1,4 @@
-module github.com/kijimaD/nov
+module msg
 
 go 1.20
 
