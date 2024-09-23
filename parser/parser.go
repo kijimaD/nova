@@ -239,10 +239,13 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 
 	p.nextToken()
 
-	for !p.curTokenIs(token.ASTERISK) && !p.curTokenIs(token.EOF) {
+	for !p.peekTokenIs(token.ASTERISK) {
 		stmt := p.parseStatement()
 		if stmt != nil {
 			block.Statements = append(block.Statements, stmt)
+		}
+		if p.peekTokenIs(token.EOF) {
+			break
 		}
 		p.nextToken()
 	}

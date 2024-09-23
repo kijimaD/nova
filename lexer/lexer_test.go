@@ -153,3 +153,64 @@ func TestNextToken(t *testing.T) {
 		assert.Equal(t, tt.expectedLiteral, tok.Literal)
 	}
 }
+
+func TestNextToken_ラベルを処理できる(t *testing.T) {
+	input := `*label1
+あああ
+*label2
+いいい`
+	l := NewLexer(input)
+
+	tests := []struct {
+		expectedType    token.TokenType
+		expectedLiteral string
+	}{
+		{
+			expectedType:    token.ASTERISK,
+			expectedLiteral: "*",
+		},
+		{
+			expectedType:    token.TEXT,
+			expectedLiteral: "label1",
+		},
+		{
+			expectedType:    token.NEWLINE,
+			expectedLiteral: "\n",
+		},
+		{
+			expectedType:    token.TEXT,
+			expectedLiteral: "あああ",
+		},
+		{
+			expectedType:    token.NEWLINE,
+			expectedLiteral: "\n",
+		},
+		{
+			expectedType:    token.ASTERISK,
+			expectedLiteral: "*",
+		},
+		{
+			expectedType:    token.TEXT,
+			expectedLiteral: "label2",
+		},
+		{
+			expectedType:    token.NEWLINE,
+			expectedLiteral: "\n",
+		},
+		{
+			expectedType:    token.TEXT,
+			expectedLiteral: "いいい",
+		},
+		{
+			expectedType:    token.EOF,
+			expectedLiteral: "",
+		},
+	}
+
+	for _, tt := range tests {
+		tok := l.NextToken()
+
+		assert.Equal(t, tt.expectedType, tok.Type)
+		assert.Equal(t, tt.expectedLiteral, tok.Literal)
+	}
+}

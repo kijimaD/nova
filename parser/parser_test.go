@@ -68,7 +68,10 @@ func TestParsingCmdExpression(t *testing.T) {
 func TestParsingLabelExpression(t *testing.T) {
 	input := `*example1
 本文1
-本文2`
+本文2
+*example2
+本文3
+本文4`
 
 	l := lexer.NewLexer(input)
 	p := NewParser(l)
@@ -95,6 +98,29 @@ func TestParsingLabelExpression(t *testing.T) {
 			es, ok := f.Body.Statements[2].(*ast.ExpressionStatement)
 			assert.True(t, ok)
 			assert.Equal(t, "本文2", es.Token.Literal)
+		}
+	}
+	{
+		stmt, ok := program.Statements[1].(*ast.ExpressionStatement)
+		assert.True(t, ok)
+		f, ok := stmt.Expression.(*ast.LabelLiteral)
+		assert.True(t, ok)
+		assert.Equal(t, "example2", f.LabelName.Value)
+
+		{
+			es, ok := f.Body.Statements[0].(*ast.ExpressionStatement)
+			assert.True(t, ok)
+			assert.Equal(t, "本文3", es.Token.Literal)
+		}
+		{
+			es, ok := f.Body.Statements[1].(*ast.ExpressionStatement)
+			assert.True(t, ok)
+			assert.Equal(t, "\n", es.Token.Literal)
+		}
+		{
+			es, ok := f.Body.Statements[2].(*ast.ExpressionStatement)
+			assert.True(t, ok)
+			assert.Equal(t, "本文4", es.Token.Literal)
 		}
 	}
 }
