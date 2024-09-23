@@ -48,6 +48,7 @@ func (p *Program) String() string {
 	return out.String()
 }
 
+// 式文は文に含まれる
 type ExpressionStatement struct {
 	Token      token.Token // 式の最初のトークン
 	Expression Expression  // 式を保持
@@ -134,5 +135,43 @@ func (n *NamedParams) String() string {
 		out.WriteString(" = ")
 		out.WriteString(v)
 	}
+	return out.String()
+}
+
+// ブロック
+type BlockStatement struct {
+	Token      token.Token
+	Statements []Statement
+}
+
+func (bs *BlockStatement) statementNode()       {}
+func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
+func (bs *BlockStatement) String() string {
+	var out bytes.Buffer
+
+	for _, s := range bs.Statements {
+		out.WriteString(s.String())
+	}
+
+	return out.String()
+}
+
+// ラベル表現
+type LabelLiteral struct {
+	Token     token.Token // token.ASTERISKトークン
+	LabelName Identifier
+	Body      *BlockStatement // 定義の中身自体は文
+}
+
+func (le *LabelLiteral) expressionNode()      {}
+func (le *LabelLiteral) TokenLiteral() string { return le.Token.Literal }
+func (le *LabelLiteral) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(token.ASTERISK)
+	out.WriteString(le.TokenLiteral())
+	out.WriteString("\n")
+	out.WriteString(le.Body.String())
+
 	return out.String()
 }

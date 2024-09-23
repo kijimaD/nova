@@ -1,6 +1,8 @@
 package lexer
 
-import "github.com/kijimaD/nov/token"
+import (
+	"github.com/kijimaD/nov/token"
+)
 
 type Lexer struct {
 	input        string
@@ -45,6 +47,8 @@ func (l *Lexer) NextToken() token.Token {
 	case '"':
 		tok.Type = token.STRING
 		tok.Literal = l.readString()
+	case '*':
+		tok = newToken(token.ASTERISK, l.ch)
 	case '\n':
 		tok = newToken(token.NEWLINE, l.ch)
 	case 0:

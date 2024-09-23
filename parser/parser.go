@@ -31,14 +31,17 @@ type (
 )
 
 const (
+	// 優先順位
 	_ int = iota
 	LOWEST
-	CMD // [...]
+	CMD   // [...]
+	LABEL // *...
 )
 
 // 優先順位テーブル。トークンタイプと優先順位を関連付ける
 var precedences = map[token.TokenType]int{
 	token.LBRACKET: CMD,
+	token.ASTERISK: LABEL,
 }
 
 // 字句解析器を受け取って初期化する
@@ -52,6 +55,7 @@ func NewParser(l *lexer.Lexer) *Parser {
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.TEXT, p.parseTextLiteral)
 	p.registerPrefix(token.LBRACKET, p.parseCmdLiteral)
+	p.registerPrefix(token.ASTERISK, p.parseLabelLiteral)
 
 	// 2つトークンを読み込む。curTokenとpeekTokenの両方がセットされる
 	p.nextToken()
@@ -97,6 +101,7 @@ func (p *Parser) ParseProgram() *ast.Program {
 }
 
 // 文をパースする。トークンの型によって適用関数を変える
+// 文の中に、式文や式がある
 func (p *Parser) parseStatement() ast.Statement {
 	// 式文の構文解析を試みる
 	return p.parseExpressionStatement()
@@ -226,4 +231,40 @@ func (p *Parser) parseCmdParameters() ast.NamedParams {
 	}
 
 	return namedParams
+}
+
+func (p *Parser) parseBlockStatement() *ast.BlockStatement {
+	block := &ast.BlockStatement{Token: p.curToken}
+	block.Statements = []ast.Statement{}
+
+	p.nextToken()
+
+	for !p.curTokenIs(token.ASTERISK) && !p.curTokenIs(token.EOF) {
+		stmt := p.parseStatement()
+		if stmt != nil {
+			block.Statements = append(block.Statements, stmt)
+		}
+		p.nextToken()
+	}
+
+	return block
+}
+
+// ラベルリテラルをパース
+// *sample\n
+func (p *Parser) parseLabelLiteral() ast.Expression {
+	lit := &ast.LabelLiteral{Token: p.curToken} // *
+
+	p.nextToken()
+	ident := ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	lit.LabelName = ident
+
+	for !p.peekTokenIs(token.NEWLINE) {
+		p.nextToken()
+	}
+	p.nextToken()
+
+	lit.Body = p.parseBlockStatement()
+
+	return lit
 }

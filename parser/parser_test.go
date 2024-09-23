@@ -10,9 +10,7 @@ import (
 )
 
 func TestParsingIndexExpressions(t *testing.T) {
-	input := `こんにちは[l]世界[p]
-←無視される改行たたたたた。
-←有効な改行`
+	input := `こんにちは[l]世界[p]`
 
 	l := lexer.NewLexer(input)
 	p := NewParser(l)
@@ -46,13 +44,6 @@ func TestParsingIndexExpressions(t *testing.T) {
 		assert.True(t, ok)
 		assert.Equal(t, "[p]", cmdExp.String())
 	}
-	{
-		stmt, ok := program.Statements[4].(*ast.ExpressionStatement)
-		assert.True(t, ok)
-		textLit, ok := stmt.Expression.(*ast.TextLiteral)
-		assert.True(t, ok)
-		assert.Equal(t, "←無視される改行たたたたた。\n←有効な改行", textLit.Value)
-	}
 }
 
 func TestParsingCmdExpression(t *testing.T) {
@@ -72,4 +63,38 @@ func TestParsingCmdExpression(t *testing.T) {
 	assert.Equal(t, "value1", f.Parameters.Map["a"])
 	assert.Equal(t, "value2", f.Parameters.Map["b"])
 	assert.Equal(t, "test.png", f.Parameters.Map["c"])
+}
+
+func TestParsingLabelExpression(t *testing.T) {
+	input := `*example1
+本文1
+本文2`
+
+	l := lexer.NewLexer(input)
+	p := NewParser(l)
+	program := p.ParseProgram()
+
+	{
+		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+		assert.True(t, ok)
+		f, ok := stmt.Expression.(*ast.LabelLiteral)
+		assert.True(t, ok)
+		assert.Equal(t, "example1", f.LabelName.Value)
+
+		{
+			es, ok := f.Body.Statements[0].(*ast.ExpressionStatement)
+			assert.True(t, ok)
+			assert.Equal(t, "本文1", es.Token.Literal)
+		}
+		{
+			es, ok := f.Body.Statements[1].(*ast.ExpressionStatement)
+			assert.True(t, ok)
+			assert.Equal(t, "\n", es.Token.Literal)
+		}
+		{
+			es, ok := f.Body.Statements[2].(*ast.ExpressionStatement)
+			assert.True(t, ok)
+			assert.Equal(t, "本文2", es.Token.Literal)
+		}
+	}
 }

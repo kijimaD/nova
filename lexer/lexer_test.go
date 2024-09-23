@@ -9,7 +9,8 @@ import (
 )
 
 func TestNextToken(t *testing.T) {
-	input := `こんにちは[l]あああ
+	input := `*label
+こんにちは[l]あああ
 ←改行した。[p]
 [image source="test.png" page="fore"]
 [wait time="100"]`
@@ -19,6 +20,18 @@ func TestNextToken(t *testing.T) {
 		expectedType    token.TokenType
 		expectedLiteral string
 	}{
+		{
+			expectedType:    token.ASTERISK,
+			expectedLiteral: "*",
+		},
+		{
+			expectedType:    token.TEXT,
+			expectedLiteral: "label",
+		},
+		{
+			expectedType:    token.NEWLINE,
+			expectedLiteral: "\n",
+		},
 		{
 			expectedType:    token.TEXT,
 			expectedLiteral: "こんにちは",
@@ -37,7 +50,15 @@ func TestNextToken(t *testing.T) {
 		},
 		{
 			expectedType:    token.TEXT,
-			expectedLiteral: "あああ\n←改行した。",
+			expectedLiteral: "あああ",
+		},
+		{
+			expectedType:    token.NEWLINE,
+			expectedLiteral: "\n",
+		},
+		{
+			expectedType:    token.TEXT,
+			expectedLiteral: "←改行した。",
 		},
 		{
 			expectedType:    token.LBRACKET,
@@ -50,6 +71,10 @@ func TestNextToken(t *testing.T) {
 		{
 			expectedType:    token.RBRACKET,
 			expectedLiteral: "]",
+		},
+		{
+			expectedType:    token.NEWLINE,
+			expectedLiteral: "\n",
 		},
 		{
 			expectedType:    token.LBRACKET,
@@ -86,6 +111,10 @@ func TestNextToken(t *testing.T) {
 		{
 			expectedType:    token.RBRACKET,
 			expectedLiteral: "]",
+		},
+		{
+			expectedType:    token.NEWLINE,
+			expectedLiteral: "\n",
 		},
 		{
 			expectedType:    token.LBRACKET,
