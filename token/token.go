@@ -20,6 +20,7 @@ const (
 	RBRACKET = "]"
 	COMMA    = ","
 	EQUAL    = "="
+	NEWLINE  = "\n"
 
 	CMD_FLUSH         = "p"
 	CMD_LINE_END_WAIT = "l"

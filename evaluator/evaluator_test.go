@@ -13,8 +13,8 @@ import (
 
 func TestEval(t *testing.T) {
 	input := `こんにちは[l]世界[p]
-←無視される改行たたたたた。
-←有効な改行
+←12345
+←aiueo
 [image source="test.png"]
 [wait time="100"]`
 
@@ -44,7 +44,8 @@ func TestEval(t *testing.T) {
 		"lineEndWait",
 		"世界",
 		"flush",
-		"←無視される改行たたたたた。\n←有効な改行\n",
+		"←12345",
+		"←aiueo",
 		"changeBg source=test.png",
 		"wait time=100ms",
 	}
