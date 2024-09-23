@@ -1,7 +1,9 @@
-package msg
+package lexer
 
 import (
 	"testing"
+
+	"github.com/kijimaD/nov/token"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -14,103 +16,103 @@ func TestNextToken(t *testing.T) {
 	l := NewLexer(input)
 
 	tests := []struct {
-		expectedType    TokenType
+		expectedType    token.TokenType
 		expectedLiteral string
 	}{
 		{
-			expectedType:    TEXT,
+			expectedType:    token.TEXT,
 			expectedLiteral: "こんにちは",
 		},
 		{
-			expectedType:    LBRACKET,
+			expectedType:    token.LBRACKET,
 			expectedLiteral: "[",
 		},
 		{
-			expectedType:    IDENT,
+			expectedType:    token.IDENT,
 			expectedLiteral: "l",
 		},
 		{
-			expectedType:    RBRACKET,
+			expectedType:    token.RBRACKET,
 			expectedLiteral: "]",
 		},
 		{
-			expectedType:    TEXT,
+			expectedType:    token.TEXT,
 			expectedLiteral: "あああ\n←改行した。",
 		},
 		{
-			expectedType:    LBRACKET,
+			expectedType:    token.LBRACKET,
 			expectedLiteral: "[",
 		},
 		{
-			expectedType:    IDENT,
+			expectedType:    token.IDENT,
 			expectedLiteral: "p",
 		},
 		{
-			expectedType:    RBRACKET,
+			expectedType:    token.RBRACKET,
 			expectedLiteral: "]",
 		},
 		{
-			expectedType:    LBRACKET,
+			expectedType:    token.LBRACKET,
 			expectedLiteral: "[",
 		},
 		{
-			expectedType:    IDENT,
+			expectedType:    token.IDENT,
 			expectedLiteral: "image",
 		},
 		{
-			expectedType:    IDENT,
+			expectedType:    token.IDENT,
 			expectedLiteral: "source",
 		},
 		{
-			expectedType:    EQUAL,
+			expectedType:    token.EQUAL,
 			expectedLiteral: "=",
 		},
 		{
-			expectedType:    STRING,
+			expectedType:    token.STRING,
 			expectedLiteral: "test.png",
 		},
 		{
-			expectedType:    IDENT,
+			expectedType:    token.IDENT,
 			expectedLiteral: "page",
 		},
 		{
-			expectedType:    EQUAL,
+			expectedType:    token.EQUAL,
 			expectedLiteral: "=",
 		},
 		{
-			expectedType:    STRING,
+			expectedType:    token.STRING,
 			expectedLiteral: "fore",
 		},
 		{
-			expectedType:    RBRACKET,
+			expectedType:    token.RBRACKET,
 			expectedLiteral: "]",
 		},
 		{
-			expectedType:    LBRACKET,
+			expectedType:    token.LBRACKET,
 			expectedLiteral: "[",
 		},
 		{
-			expectedType:    IDENT,
+			expectedType:    token.IDENT,
 			expectedLiteral: "wait",
 		},
 		{
-			expectedType:    IDENT,
+			expectedType:    token.IDENT,
 			expectedLiteral: "time",
 		},
 		{
-			expectedType:    EQUAL,
+			expectedType:    token.EQUAL,
 			expectedLiteral: "=",
 		},
 		{
-			expectedType:    STRING,
+			expectedType:    token.STRING,
 			expectedLiteral: "100",
 		},
 		{
-			expectedType:    RBRACKET,
+			expectedType:    token.RBRACKET,
 			expectedLiteral: "]",
 		},
 		{
-			expectedType:    EOF,
+			expectedType:    token.EOF,
 			expectedLiteral: "",
 		},
 	}

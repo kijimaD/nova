@@ -1,4 +1,4 @@
-package msg
+package worker
 
 import (
 	"log"
@@ -25,33 +25,30 @@ const (
 )
 
 // メッセージ表示
-type msgEmit struct {
+type MsgEmit struct {
 	// パーサーから渡ってきた表示対象の文字列
-	body string
+	Body string
 	// 終了
-	doneChan chan bool
-	// 自動改行カウント
-	nlCount int
+	DoneChan chan bool
 }
 
-func NewMsgEmit(body string) msgEmit {
-	return msgEmit{
-		body:     body,
-		doneChan: make(chan bool, 1),
-		nlCount:  0,
+func NewMsgEmit(body string) MsgEmit {
+	return MsgEmit{
+		Body:     body,
+		DoneChan: make(chan bool, 1),
 	}
 }
 
-func (e *msgEmit) Run(q *Queue) {
-	if e.doneChan == nil {
+func (e *MsgEmit) Run(q *Queue) {
+	if e.DoneChan == nil {
 		log.Fatal("doneChan is nil")
 	}
 
-	for i, char := range e.body {
+	for i, char := range e.Body {
 		select {
-		case <-e.doneChan:
+		case <-e.DoneChan:
 			// フラグが立ったら残りの文字を一気に表示
-			q.buf += e.body[i:]
+			q.buf += e.Body[i:]
 			q.wg.Done()
 
 			return
@@ -66,17 +63,17 @@ func (e *msgEmit) Run(q *Queue) {
 	return
 }
 
-func (e *msgEmit) Skip() {
-	e.doneChan <- true
-	close(e.doneChan)
+func (e *MsgEmit) Skip() {
+	e.DoneChan <- true
+	close(e.DoneChan)
 }
 
 // ================
 
 // ページをフラッシュする
-type flush struct{}
+type Flush struct{}
 
-func (c *flush) Run(q *Queue) {
+func (c *Flush) Run(q *Queue) {
 	q.buf = ""
 	q.wg.Done()
 	return
@@ -96,9 +93,9 @@ func (c *ChangeBg) Run(q *Queue) {
 // ================
 
 // 行末クリック待ち
-type lineEndWait struct{}
+type LineEndWait struct{}
 
-func (l *lineEndWait) Run(q *Queue) {
+func (l *LineEndWait) Run(q *Queue) {
 	q.buf = q.buf + "\n"
 	return
 }
@@ -106,20 +103,20 @@ func (l *lineEndWait) Run(q *Queue) {
 // ================
 
 // 未実装
-type notImplement struct{}
+type NotImplement struct{}
 
-func (l *notImplement) Run(q *Queue) {
+func (l *NotImplement) Run(q *Queue) {
 	q.buf = ""
 	return
 }
 
 // ================
-type wait struct {
-	durationMsec time.Duration
+type Wait struct {
+	DurationMsec time.Duration
 }
 
-func (w *wait) Run(q *Queue) {
-	time.Sleep(w.durationMsec)
+func (w *Wait) Run(q *Queue) {
+	time.Sleep(w.DurationMsec)
 	q.buf = ""
 	return
 }

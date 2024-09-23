@@ -1,8 +1,12 @@
-package msg
+package evaluator
 
 import (
 	"fmt"
 	"testing"
+
+	"github.com/kijimaD/nov/lexer"
+	"github.com/kijimaD/nov/parser"
+	"github.com/kijimaD/nov/worker"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -14,8 +18,8 @@ func TestEval(t *testing.T) {
 [image source="test.png"]
 [wait time="100"]`
 
-	l := NewLexer(input)
-	p := NewParser(l)
+	l := lexer.NewLexer(input)
+	p := parser.NewParser(l)
 	program := p.ParseProgram()
 
 	e := Evaluator{}
@@ -23,16 +27,16 @@ func TestEval(t *testing.T) {
 	results := []string{}
 	for _, e := range e.Events {
 		switch event := e.(type) {
-		case *msgEmit:
-			results = append(results, event.body)
-		case *flush:
+		case *worker.MsgEmit:
+			results = append(results, event.Body)
+		case *worker.Flush:
 			results = append(results, "flush")
-		case *lineEndWait:
+		case *worker.LineEndWait:
 			results = append(results, "lineEndWait")
-		case *ChangeBg:
+		case *worker.ChangeBg:
 			results = append(results, fmt.Sprintf("changeBg source=%s", event.Source))
-		case *wait:
-			results = append(results, fmt.Sprintf("wait time=%s", event.durationMsec))
+		case *worker.Wait:
+			results = append(results, fmt.Sprintf("wait time=%s", event.DurationMsec))
 		}
 	}
 	expect := []string{

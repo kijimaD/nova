@@ -1,4 +1,6 @@
-package msg
+package lexer
+
+import "github.com/kijimaD/nov/token"
 
 type Lexer struct {
 	input        string
@@ -26,34 +28,34 @@ func (l *Lexer) readChar() {
 }
 
 // 現在の1文字を読みこんでトークンを返す
-func (l *Lexer) NextToken() Token {
-	var tok Token
+func (l *Lexer) NextToken() token.Token {
+	var tok token.Token
 
 	l.skipWhitespace()
 
 	switch l.ch {
 	case '[':
-		tok = newToken(LBRACKET, l.ch)
+		tok = newToken(token.LBRACKET, l.ch)
 		l.OnIdent = true
 	case ']':
-		tok = newToken(RBRACKET, l.ch)
+		tok = newToken(token.RBRACKET, l.ch)
 		l.OnIdent = false
 	case '=':
-		tok = newToken(EQUAL, l.ch)
+		tok = newToken(token.EQUAL, l.ch)
 	case '"':
-		tok.Type = STRING
+		tok.Type = token.STRING
 		tok.Literal = l.readString()
 	case 0:
 		tok.Literal = ""
-		tok.Type = EOF
+		tok.Type = token.EOF
 	default:
 		if l.OnIdent {
 			tok.Literal = l.readIdentifier()
-			tok.Type = LookupIdent(tok.Literal) // 予約語
+			tok.Type = token.LookupIdent(tok.Literal) // 予約語
 			return tok
 		} else {
 			tok.Literal = l.readText()
-			tok.Type = TEXT
+			tok.Type = token.TEXT
 			return tok
 		}
 	}
@@ -63,8 +65,8 @@ func (l *Lexer) NextToken() Token {
 }
 
 // トークンを初期化する
-func newToken(tokenType TokenType, ch byte) Token {
-	return Token{Type: tokenType, Literal: string(ch)}
+func newToken(tokenType token.TokenType, ch byte) token.Token {
+	return token.Token{Type: tokenType, Literal: string(ch)}
 }
 
 // 予約語を読み込み

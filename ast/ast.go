@@ -1,8 +1,10 @@
-package msg
+package ast
 
 import (
 	"bytes"
 	"strings"
+
+	"github.com/kijimaD/nov/token"
 )
 
 type Node interface {
@@ -47,8 +49,8 @@ func (p *Program) String() string {
 }
 
 type ExpressionStatement struct {
-	Token      Token      // 式の最初のトークン
-	Expression Expression // 式を保持
+	Token      token.Token // 式の最初のトークン
+	Expression Expression  // 式を保持
 }
 
 func (es *ExpressionStatement) statementNode()       {}
@@ -61,9 +63,8 @@ func (es *ExpressionStatement) String() string {
 }
 
 type CmdExpression struct {
-	Token      Token // '['トークン
+	Token      token.Token // '['トークン
 	Expression Expression
-	Cmd        Event
 }
 
 func (ie *CmdExpression) expressionNode()      {}
@@ -79,7 +80,7 @@ func (ie *CmdExpression) String() string {
 }
 
 type TextLiteral struct {
-	Token Token
+	Token token.Token
 	Value string
 }
 
@@ -88,7 +89,7 @@ func (sl *TextLiteral) TokenLiteral() string { return sl.Token.Literal }
 func (sl *TextLiteral) String() string       { return sl.Token.Literal }
 
 type FunctionLiteral struct {
-	Token      Token
+	Token      token.Token
 	FuncName   Identifier
 	Parameters NamedParams
 }
@@ -112,7 +113,7 @@ func (fl *FunctionLiteral) String() string {
 }
 
 type Identifier struct {
-	Token Token // token.IDENT トークン
+	Token token.Token // token.IDENT トークン
 	Value string
 }
 
