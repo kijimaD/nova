@@ -1,10 +1,10 @@
 package loader
 
 import (
-	"msg/evaluator"
-	"msg/lexer"
-	"msg/parser"
-	"msg/worker"
+	"github.com/kijimaD/nov/evaluator"
+	"github.com/kijimaD/nov/lexer"
+	"github.com/kijimaD/nov/parser"
+	"github.com/kijimaD/nov/worker"
 )
 
 // 依存関係のせいで、適当に配置できない

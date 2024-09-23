@@ -3,10 +3,11 @@ package parser
 import (
 	"fmt"
 	"log"
-	"msg/token"
 
-	"msg/ast"
-	"msg/lexer"
+	"github.com/kijimaD/nov/token"
+
+	"github.com/kijimaD/nov/ast"
+	"github.com/kijimaD/nov/lexer"
 )
 
 type Parser struct {

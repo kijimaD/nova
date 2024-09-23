@@ -3,10 +3,11 @@ package evaluator
 import (
 	"fmt"
 	"log"
-	"msg/ast"
-	"msg/token"
-	"msg/worker"
 	"time"
+
+	"github.com/kijimaD/nov/ast"
+	"github.com/kijimaD/nov/token"
+	"github.com/kijimaD/nov/worker"
 )
 
 type Evaluator struct {

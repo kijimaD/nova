@@ -1,9 +1,10 @@
 package parser
 
 import (
-	"msg/ast"
-	"msg/lexer"
 	"testing"
+
+	"github.com/kijimaD/nov/ast"
+	"github.com/kijimaD/nov/lexer"
 
 	"github.com/stretchr/testify/assert"
 )

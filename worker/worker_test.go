@@ -1,10 +1,11 @@
 package worker
 
 import (
-	"msg/utils"
 	"testing"
 	"time"
 	"unicode/utf8"
+
+	"github.com/kijimaD/nov/utils"
 
 	"github.com/stretchr/testify/assert"
 )

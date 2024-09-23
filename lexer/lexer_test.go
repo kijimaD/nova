@@ -1,8 +1,9 @@
 package lexer
 
 import (
-	"msg/token"
 	"testing"
+
+	"github.com/kijimaD/nov/token"
 
 	"github.com/stretchr/testify/assert"
 )

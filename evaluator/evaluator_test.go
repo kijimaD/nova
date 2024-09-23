@@ -2,10 +2,11 @@ package evaluator
 
 import (
 	"fmt"
-	"msg/lexer"
-	"msg/parser"
-	"msg/worker"
 	"testing"
+
+	"github.com/kijimaD/nov/lexer"
+	"github.com/kijimaD/nov/parser"
+	"github.com/kijimaD/nov/worker"
 
 	"github.com/stretchr/testify/assert"
 )
