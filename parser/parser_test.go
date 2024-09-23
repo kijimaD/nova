@@ -28,7 +28,7 @@ func TestParsingIndexExpressions(t *testing.T) {
 	{
 		stmt, ok := program.Statements[1].(*ast.ExpressionStatement)
 		assert.True(t, ok)
-		cmdExp, ok := stmt.Expression.(*ast.FunctionLiteral)
+		cmdExp, ok := stmt.Expression.(*ast.CmdLiteral)
 		assert.True(t, ok)
 		assert.Equal(t, "[l]", cmdExp.String())
 	}
@@ -42,7 +42,7 @@ func TestParsingIndexExpressions(t *testing.T) {
 	{
 		stmt, ok := program.Statements[3].(*ast.ExpressionStatement)
 		assert.True(t, ok)
-		cmdExp, ok := stmt.Expression.(*ast.FunctionLiteral)
+		cmdExp, ok := stmt.Expression.(*ast.CmdLiteral)
 		assert.True(t, ok)
 		assert.Equal(t, "[p]", cmdExp.String())
 	}
@@ -66,7 +66,7 @@ func TestParsingCmdExpression(t *testing.T) {
 	stmt, ok := s.(*ast.ExpressionStatement)
 	assert.True(t, ok)
 
-	f, ok := stmt.Expression.(*ast.FunctionLiteral)
+	f, ok := stmt.Expression.(*ast.CmdLiteral)
 	assert.True(t, ok)
 	assert.Equal(t, "example", f.FuncName.Value)
 	assert.Equal(t, "value1", f.Parameters.Map["a"])

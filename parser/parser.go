@@ -51,7 +51,7 @@ func NewParser(l *lexer.Lexer) *Parser {
 	// 前置トークン
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.TEXT, p.parseTextLiteral)
-	p.registerPrefix(token.LBRACKET, p.parseFunctionLiteral)
+	p.registerPrefix(token.LBRACKET, p.parseCmdLiteral)
 
 	// 2つトークンを読み込む。curTokenとpeekTokenの両方がセットされる
 	p.nextToken()
@@ -182,8 +182,8 @@ func (p *Parser) parseTextLiteral() ast.Expression {
 // コマンドリテラルをパース
 // [image storage="test.png"]
 // [p]
-func (p *Parser) parseFunctionLiteral() ast.Expression {
-	lit := &ast.FunctionLiteral{Token: p.curToken}
+func (p *Parser) parseCmdLiteral() ast.Expression {
+	lit := &ast.CmdLiteral{Token: p.curToken}
 	p.nextToken()
 	ident := ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 	lit.FuncName = ident
@@ -191,7 +191,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	if !p.peekTokenIs(token.RBRACKET) {
 		p.nextToken()
 	}
-	lit.Parameters = p.parseFunctionParameters()
+	lit.Parameters = p.parseCmdParameters()
 
 	p.nextToken()
 
@@ -199,7 +199,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 }
 
 // 引数をパース
-func (p *Parser) parseFunctionParameters() ast.NamedParams {
+func (p *Parser) parseCmdParameters() ast.NamedParams {
 	namedParams := ast.NamedParams{}
 	namedParams.Map = map[string]string{}
 

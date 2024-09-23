@@ -88,15 +88,15 @@ func (sl *TextLiteral) expressionNode()      {}
 func (sl *TextLiteral) TokenLiteral() string { return sl.Token.Literal }
 func (sl *TextLiteral) String() string       { return sl.Token.Literal }
 
-type FunctionLiteral struct {
+type CmdLiteral struct {
 	Token      token.Token
 	FuncName   Identifier
 	Parameters NamedParams
 }
 
-func (fl *FunctionLiteral) expressionNode()      {} // fnの結果をほかの変数に代入できたりするため。代入式の一部として扱うためには、式でないといけない
-func (fl *FunctionLiteral) TokenLiteral() string { return fl.Token.Literal }
-func (fl *FunctionLiteral) String() string {
+func (fl *CmdLiteral) expressionNode()      {} // fnの結果をほかの変数に代入できたりするため。代入式の一部として扱うためには、式でないといけない
+func (fl *CmdLiteral) TokenLiteral() string { return fl.Token.Literal }
+func (fl *CmdLiteral) String() string {
 	var out bytes.Buffer
 
 	params := []string{}

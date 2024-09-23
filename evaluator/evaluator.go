@@ -27,7 +27,7 @@ func (e *Evaluator) Eval(node ast.Node) worker.Event {
 		return e.evalProgram(node)
 	case *ast.ExpressionStatement:
 		return e.Eval(node.Expression)
-	case *ast.FunctionLiteral:
+	case *ast.CmdLiteral:
 		var eve worker.Event
 		switch node.FuncName.Value {
 		case token.CMD_FLUSH:
