@@ -13,7 +13,8 @@ func NewQueueFromText(text string) worker.Queue {
 	l := lexer.NewLexer(text)
 	p := parser.NewParser(l)
 	program := p.ParseProgram()
-	e := evaluator.NewEvaluator(program)
+	e := evaluator.NewEvaluator()
+	e.Eval(program)
 	q := worker.NewQueue()
 	q.Events = e.Events
 

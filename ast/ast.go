@@ -138,7 +138,8 @@ func (n *NamedParams) String() string {
 	return out.String()
 }
 
-// ブロック
+// ラベルの本体となるブロック
+// Statementと区別する必要はない気がするな
 type BlockStatement struct {
 	Token      token.Token
 	Statements []Statement
