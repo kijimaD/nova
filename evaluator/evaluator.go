@@ -11,12 +11,15 @@ import (
 )
 
 type Evaluator struct {
-	Events []worker.Event
+	Events   []worker.Event
+	LabelMap map[string]*ast.BlockStatement
 }
 
-func NewEvaluator(node ast.Node) *Evaluator {
-	e := Evaluator{}
-	e.Eval(node)
+func NewEvaluator() *Evaluator {
+	e := Evaluator{
+		LabelMap: make(map[string]*ast.BlockStatement),
+		Events:   []worker.Event{},
+	}
 
 	return &e
 }
@@ -27,7 +30,11 @@ func (e *Evaluator) Eval(node ast.Node) worker.Event {
 		return e.evalProgram(node)
 	case *ast.ExpressionStatement:
 		return e.Eval(node.Expression)
-	case *ast.FunctionLiteral:
+	case *ast.BlockStatement:
+		for _, statement := range node.Statements {
+			e.Eval(statement)
+		}
+	case *ast.CmdLiteral:
 		var eve worker.Event
 		switch node.FuncName.Value {
 		case token.CMD_FLUSH:
@@ -49,9 +56,26 @@ func (e *Evaluator) Eval(node ast.Node) worker.Event {
 		m := &worker.MsgEmit{Body: node.Value, DoneChan: make(chan bool, 1)}
 		e.Events = append(e.Events, m)
 		return m
+	case *ast.LabelLiteral:
+		e.LabelMap[node.LabelName.String()] = node.Body
+		return e.Eval(node.Body)
+	case nil:
+	default:
+		log.Fatal(fmt.Sprintf("error: 未登録のASTを検知した %#v", node))
 	}
 
 	return nil
+}
+
+// 指定ラベルを再生する
+func (e *Evaluator) Play(label string) []worker.Event {
+	block, ok := e.LabelMap[label]
+	if !ok {
+		log.Fatal("指定されたlabelが存在しない")
+	}
+	e.Events = []worker.Event{}
+	e.Eval(block)
+	return e.Events
 }
 
 func (e *Evaluator) evalProgram(program *ast.Program) worker.Event {

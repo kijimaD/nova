@@ -102,21 +102,34 @@ func (l *LineEndWait) Run(q *Queue) {
 
 // ================
 
-// 未実装
-type NotImplement struct{}
-
-func (l *NotImplement) Run(q *Queue) {
-	q.buf = ""
-	return
-}
-
-// ================
+// 秒数待ち
 type Wait struct {
 	DurationMsec time.Duration
 }
 
 func (w *Wait) Run(q *Queue) {
 	time.Sleep(w.DurationMsec)
+	q.buf = ""
+	return
+}
+
+// ================
+
+// ジャンプ
+type Jump struct {
+	Target string
+}
+
+func (j *Jump) Run(q *Queue) {
+	return
+}
+
+// ================
+
+// 未実装
+type NotImplement struct{}
+
+func (l *NotImplement) Run(q *Queue) {
 	q.buf = ""
 	return
 }

@@ -48,6 +48,7 @@ func (p *Program) String() string {
 	return out.String()
 }
 
+// 式文は文に含まれる
 type ExpressionStatement struct {
 	Token      token.Token // 式の最初のトークン
 	Expression Expression  // 式を保持
@@ -88,15 +89,15 @@ func (sl *TextLiteral) expressionNode()      {}
 func (sl *TextLiteral) TokenLiteral() string { return sl.Token.Literal }
 func (sl *TextLiteral) String() string       { return sl.Token.Literal }
 
-type FunctionLiteral struct {
+type CmdLiteral struct {
 	Token      token.Token
 	FuncName   Identifier
 	Parameters NamedParams
 }
 
-func (fl *FunctionLiteral) expressionNode()      {} // fnの結果をほかの変数に代入できたりするため。代入式の一部として扱うためには、式でないといけない
-func (fl *FunctionLiteral) TokenLiteral() string { return fl.Token.Literal }
-func (fl *FunctionLiteral) String() string {
+func (fl *CmdLiteral) expressionNode()      {} // fnの結果をほかの変数に代入できたりするため。代入式の一部として扱うためには、式でないといけない
+func (fl *CmdLiteral) TokenLiteral() string { return fl.Token.Literal }
+func (fl *CmdLiteral) String() string {
 	var out bytes.Buffer
 
 	params := []string{}
@@ -134,5 +135,44 @@ func (n *NamedParams) String() string {
 		out.WriteString(" = ")
 		out.WriteString(v)
 	}
+	return out.String()
+}
+
+// ラベルの本体となるブロック
+// Statementと区別する必要はない気がするな
+type BlockStatement struct {
+	Token      token.Token
+	Statements []Statement
+}
+
+func (bs *BlockStatement) statementNode()       {}
+func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
+func (bs *BlockStatement) String() string {
+	var out bytes.Buffer
+
+	for _, s := range bs.Statements {
+		out.WriteString(s.String())
+	}
+
+	return out.String()
+}
+
+// ラベル表現
+type LabelLiteral struct {
+	Token     token.Token // token.ASTERISKトークン
+	LabelName Identifier
+	Body      *BlockStatement // 定義の中身自体は文
+}
+
+func (le *LabelLiteral) expressionNode()      {}
+func (le *LabelLiteral) TokenLiteral() string { return le.Token.Literal }
+func (le *LabelLiteral) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(token.ASTERISK)
+	out.WriteString(le.TokenLiteral())
+	out.WriteString("\n")
+	out.WriteString(le.Body.String())
+
 	return out.String()
 }

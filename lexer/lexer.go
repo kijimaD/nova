@@ -1,6 +1,8 @@
 package lexer
 
-import "github.com/kijimaD/nov/token"
+import (
+	"github.com/kijimaD/nov/token"
+)
 
 type Lexer struct {
 	input        string
@@ -45,6 +47,10 @@ func (l *Lexer) NextToken() token.Token {
 	case '"':
 		tok.Type = token.STRING
 		tok.Literal = l.readString()
+	case '*':
+		tok = newToken(token.ASTERISK, l.ch)
+	case '\n':
+		tok = newToken(token.NEWLINE, l.ch)
 	case 0:
 		tok.Literal = ""
 		tok.Type = token.EOF
@@ -80,7 +86,7 @@ func (l *Lexer) readIdentifier() string {
 
 // 半角スペースを読み飛ばす
 func (l *Lexer) skipWhitespace() {
-	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
+	for l.ch == ' ' || l.ch == '\t' || l.ch == '\r' {
 		l.readChar()
 	}
 }
@@ -98,7 +104,7 @@ func (l *Lexer) readText() string {
 	position := l.position
 	for {
 		l.readChar()
-		if l.ch == '[' || l.ch == ']' || l.ch == 0 {
+		if l.ch == '[' || l.ch == ']' || l.ch == 0 || l.ch == '\n' {
 			break
 		}
 	}
