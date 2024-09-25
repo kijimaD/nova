@@ -1,4 +1,4 @@
-package evaluator
+package worker
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 
 	"github.com/kijimaD/nov/lexer"
 	"github.com/kijimaD/nov/parser"
-	"github.com/kijimaD/nov/worker"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -34,15 +33,15 @@ aiueo
 		results := []string{}
 		for _, e := range events {
 			switch event := e.(type) {
-			case *worker.MsgEmit:
+			case *MsgEmit:
 				results = append(results, event.Body)
-			case *worker.Flush:
+			case *Flush:
 				results = append(results, "flush")
-			case *worker.LineEndWait:
+			case *LineEndWait:
 				results = append(results, "lineEndWait")
-			case *worker.ChangeBg:
+			case *ChangeBg:
 				results = append(results, fmt.Sprintf("changeBg source=%s", event.Source))
-			case *worker.Wait:
+			case *Wait:
 				results = append(results, fmt.Sprintf("wait time=%s", event.DurationMsec))
 			default:
 				t.Errorf("未処理のイベントが指定された: %v", event)
@@ -65,11 +64,11 @@ aiueo
 		results := []string{}
 		for _, e := range events {
 			switch event := e.(type) {
-			case *worker.MsgEmit:
+			case *MsgEmit:
 				results = append(results, event.Body)
-			case *worker.LineEndWait:
+			case *LineEndWait:
 				results = append(results, "lineEndWait")
-			case *worker.Jump:
+			case *Jump:
 				results = append(results, fmt.Sprintf("jump target=%s", event.Target))
 			default:
 				t.Errorf("未処理のイベントが指定された: %v", event)

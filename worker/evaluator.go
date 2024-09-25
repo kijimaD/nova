@@ -1,4 +1,4 @@
-package evaluator
+package worker
 
 import (
 	"fmt"
@@ -6,11 +6,10 @@ import (
 
 	"github.com/kijimaD/nov/ast"
 	"github.com/kijimaD/nov/token"
-	"github.com/kijimaD/nov/worker"
 )
 
 type Evaluator struct {
-	Events   []worker.Event
+	Events   []Event
 	LabelMap map[string]*ast.BlockStatement
 	errors   []error
 }
@@ -18,13 +17,13 @@ type Evaluator struct {
 func NewEvaluator() *Evaluator {
 	e := Evaluator{
 		LabelMap: make(map[string]*ast.BlockStatement),
-		Events:   []worker.Event{},
+		Events:   []Event{},
 	}
 
 	return &e
 }
 
-func (e *Evaluator) Eval(node ast.Node) worker.Event {
+func (e *Evaluator) Eval(node ast.Node) Event {
 	switch node := node.(type) {
 	case *ast.Program:
 		return e.evalProgram(node)
@@ -35,28 +34,28 @@ func (e *Evaluator) Eval(node ast.Node) worker.Event {
 			e.Eval(statement)
 		}
 	case *ast.CmdLiteral:
-		var eve worker.Event
+		var eve Event
 		switch node.FuncName.Value {
 		case token.CMD_FLUSH:
-			eve = &worker.Flush{}
+			eve = &Flush{}
 		case token.CMD_LINE_END_WAIT:
-			eve = &worker.LineEndWait{}
+			eve = &LineEndWait{}
 		case token.CMD_IMAGE:
-			eve = &worker.ChangeBg{Source: node.Parameters.Map["source"]}
+			eve = &ChangeBg{Source: node.Parameters.Map["source"]}
 		case token.CMD_WAIT:
 			duration, err := time.ParseDuration(fmt.Sprintf("%sms", node.Parameters.Map["time"]))
 			if err != nil {
 				e.errors = append(e.errors, err)
 				return nil
 			}
-			eve = &worker.Wait{DurationMsec: duration}
+			eve = &Wait{DurationMsec: duration}
 		case token.CMD_JUMP:
-			eve = &worker.Jump{Target: node.Parameters.Map["target"]}
+			eve = &Jump{Target: node.Parameters.Map["target"]}
 		}
 		e.Events = append(e.Events, eve)
 		return eve
 	case *ast.TextLiteral:
-		m := &worker.MsgEmit{Body: node.Value, DoneChan: make(chan bool, 1)}
+		m := &MsgEmit{Body: node.Value, DoneChan: make(chan bool, 1)}
 		e.Events = append(e.Events, m)
 		return m
 	case *ast.LabelLiteral:
@@ -72,19 +71,19 @@ func (e *Evaluator) Eval(node ast.Node) worker.Event {
 }
 
 // 指定ラベルを再生する
-func (e *Evaluator) Play(label string) []worker.Event {
+func (e *Evaluator) Play(label string) []Event {
 	block, ok := e.LabelMap[label]
 	if !ok {
 		e.errors = append(e.errors, fmt.Errorf("指定ラベルが存在しない %s", label))
 		return e.Events
 	}
-	e.Events = []worker.Event{}
+	e.Events = []Event{}
 	e.Eval(block)
 	return e.Events
 }
 
-func (e *Evaluator) evalProgram(program *ast.Program) worker.Event {
-	var result worker.Event
+func (e *Evaluator) evalProgram(program *ast.Program) Event {
+	var result Event
 
 	for _, statement := range program.Statements {
 		result = e.Eval(statement)

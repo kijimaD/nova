@@ -1,7 +1,6 @@
 package loader
 
 import (
-	"github.com/kijimaD/nov/evaluator"
 	"github.com/kijimaD/nov/lexer"
 	"github.com/kijimaD/nov/parser"
 	"github.com/kijimaD/nov/worker"
@@ -16,7 +15,7 @@ func NewQueueFromText(text string) (worker.Queue, error) {
 	if err != nil {
 		return worker.Queue{}, err
 	}
-	e := evaluator.NewEvaluator()
+	e := worker.NewEvaluator()
 	e.Eval(program)
 	q := worker.NewQueue()
 	q.Events = e.Events
