@@ -27,6 +27,7 @@ const (
 	CMD_LINE_END_WAIT = "l"
 	CMD_IMAGE         = "image"
 	CMD_WAIT          = "wait"
+	CMD_JUMP          = "jump"
 )
 
 // 予約語

@@ -1,10 +1,11 @@
-package worker
+package event
 
 import (
 	"log"
 	"time"
 )
 
+// 別packageに移したいが、ここで参照があるためできない
 type Event interface {
 	Run(*Queue)
 }
@@ -28,7 +29,7 @@ const (
 type MsgEmit struct {
 	// パーサーから渡ってきた表示対象の文字列
 	Body string
-	// 終了
+	// 終了判定チャンネル。closeしてれば終了
 	DoneChan chan bool
 }
 
@@ -40,6 +41,7 @@ func NewMsgEmit(body string) MsgEmit {
 }
 
 func (e *MsgEmit) Run(q *Queue) {
+	// 初期化漏れ対策
 	if e.DoneChan == nil {
 		log.Fatal("doneChan is nil")
 	}
@@ -64,7 +66,6 @@ func (e *MsgEmit) Run(q *Queue) {
 }
 
 func (e *MsgEmit) Skip() {
-	e.DoneChan <- true
 	close(e.DoneChan)
 }
 
@@ -75,6 +76,7 @@ type Flush struct{}
 
 func (c *Flush) Run(q *Queue) {
 	q.buf = ""
+	q.Pop()
 	q.wg.Done()
 	return
 }
@@ -87,6 +89,7 @@ type ChangeBg struct {
 
 func (c *ChangeBg) Run(q *Queue) {
 	q.Pop()
+	q.wg.Done()
 	return
 }
 
@@ -97,6 +100,7 @@ type LineEndWait struct{}
 
 func (l *LineEndWait) Run(q *Queue) {
 	q.buf = q.buf + "\n"
+	q.wg.Done()
 	return
 }
 
@@ -110,17 +114,21 @@ type Wait struct {
 func (w *Wait) Run(q *Queue) {
 	time.Sleep(w.DurationMsec)
 	q.buf = ""
+	q.wg.Done()
 	return
 }
 
 // ================
 
-// ジャンプ
+// ジャンプ。別のラベルへ遷移する
 type Jump struct {
 	Target string
 }
 
 func (j *Jump) Run(q *Queue) {
+	q.Evaluator.Play(j.Target)
+	q.Pop() // 次イベントの先頭を読み込み
+	q.wg.Done()
 	return
 }
 
@@ -130,6 +138,6 @@ func (j *Jump) Run(q *Queue) {
 type NotImplement struct{}
 
 func (l *NotImplement) Run(q *Queue) {
-	q.buf = ""
+	q.wg.Done()
 	return
 }
