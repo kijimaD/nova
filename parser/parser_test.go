@@ -46,7 +46,7 @@ func TestParsingIndexExpressions(t *testing.T) {
 	}
 }
 
-func TestParsingCmdExpression(t *testing.T) {
+func TestParseCmdExpression(t *testing.T) {
 	input := `[example a="value1" b="value2" c="test.png"]`
 
 	l := lexer.NewLexer(input)
@@ -63,6 +63,39 @@ func TestParsingCmdExpression(t *testing.T) {
 	assert.Equal(t, "value1", f.Parameters.Map["a"])
 	assert.Equal(t, "value2", f.Parameters.Map["b"])
 	assert.Equal(t, "test.png", f.Parameters.Map["c"])
+}
+
+func TestParseCmdExpression_シンタックスエラーを捕捉できる(t *testing.T) {
+	{
+		input := `[example a]`
+
+		l := lexer.NewLexer(input)
+		p := NewParser(l)
+		_ = p.ParseProgram()
+
+		assert.Equal(t, 1, len(p.Errors()))
+		assert.Contains(t, p.Errors()[0], "パースすべきパラメータが存在しなかった")
+	}
+	{
+		input := `[example a=]`
+
+		l := lexer.NewLexer(input)
+		p := NewParser(l)
+		_ = p.ParseProgram()
+
+		assert.Equal(t, 1, len(p.Errors()))
+		assert.Contains(t, p.Errors()[0], "STRINGがない")
+	}
+	{
+		input := `[example a="hello"`
+
+		l := lexer.NewLexer(input)
+		p := NewParser(l)
+		_ = p.ParseProgram()
+
+		assert.Equal(t, 1, len(p.Errors()))
+		assert.Contains(t, p.Errors()[0], "対応する右ブラケットが存在しなかったため、末尾まで到達した")
+	}
 }
 
 func TestParsingLabelExpression(t *testing.T) {

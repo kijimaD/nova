@@ -2,7 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/kijimaD/nov/token"
 
@@ -193,9 +192,7 @@ func (p *Parser) parseCmdLiteral() ast.Expression {
 	ident := ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 	lit.FuncName = ident
 
-	if !p.peekTokenIs(token.RBRACKET) {
-		p.nextToken()
-	}
+	p.expectPeek(token.IDENT)
 	lit.Parameters = p.parseCmdParameters()
 
 	p.nextToken()
@@ -208,14 +205,20 @@ func (p *Parser) parseCmdParameters() ast.NamedParams {
 	namedParams := ast.NamedParams{}
 	namedParams.Map = map[string]string{}
 
+	if p.peekTokenIs(token.RBRACKET) {
+		p.errors = append(p.errors, fmt.Sprintf("シンタックスエラー: パースすべきパラメータが存在しなかった: %s", p.curToken.Literal))
+	}
+
 	for !p.peekTokenIs(token.RBRACKET) {
 		name := ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 		if !p.peekTokenIs(token.EQUAL) {
-			log.Fatal("シンタックスエラー: EQUALがない: ", p.curToken.Literal)
+			p.errors = append(p.errors, fmt.Sprintf("シンタックスエラー: EQUALがない: %s", p.curToken.Literal))
+			break
 		}
 		p.nextToken()
 		if !p.peekTokenIs(token.STRING) {
-			log.Fatal("シンタックスエラー: STRINGがない: ", p.curToken.Literal)
+			p.errors = append(p.errors, fmt.Sprintf("シンタックスエラー: STRINGがない: %s", p.curToken.Literal))
+			break
 		}
 		p.nextToken()
 		namedParams.Map[name.Value] = p.curToken.Literal
@@ -224,7 +227,8 @@ func (p *Parser) parseCmdParameters() ast.NamedParams {
 			break
 		}
 		if p.peekTokenIs(token.EOF) {
-			log.Fatal("対応する右ブラケットが存在しないため、末尾まで到達した")
+			p.errors = append(p.errors, "対応する右ブラケットが存在しなかったため、末尾まで到達した")
+			break
 		}
 
 		p.nextToken()
