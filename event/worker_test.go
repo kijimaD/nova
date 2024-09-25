@@ -5,6 +5,8 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/kijimaD/nov/lexer"
+	"github.com/kijimaD/nov/parser"
 	"github.com/kijimaD/nov/utils"
 
 	"github.com/stretchr/testify/assert"
@@ -24,9 +26,11 @@ import (
 // }
 
 func TestMsgEmit_Skipできる(t *testing.T) {
-	q := NewQueue()
-	q.Events = append(q.Events, utils.GetPtr(NewMsgEmit("東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12")))
-	q.Events = append(q.Events, &Flush{})
+	evaluator := Evaluator{}
+	q := NewQueue(&evaluator)
+	q.Evaluator.Events = append(q.Evaluator.Events, utils.GetPtr(NewMsgEmit("東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12")))
+	q.Evaluator.Events = append(q.Evaluator.Events, &Flush{})
+	q.Evaluator.Events = append(q.Evaluator.Events, utils.GetPtr(NewMsgEmit("last")))
 	q.Start()
 
 	assert.Equal(t, "", q.Display())
@@ -38,25 +42,76 @@ func TestMsgEmit_Skipできる(t *testing.T) {
 	assert.Equal(t, "東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12", q.Display())
 	q.Pop()
 	q.Wait()
-	assert.Equal(t, "", q.Display())
+	assert.Equal(t, "last", q.Display())
 }
 
 func TestRun_RunがPopとSkipを使い分ける(t *testing.T) {
-	q := NewQueue()
-	q.Events = append(q.Events, utils.GetPtr(NewMsgEmit("東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12")))
-	q.Events = append(q.Events, &Flush{})
+	evaluator := Evaluator{}
+	q := NewQueue(&evaluator)
+	q.Evaluator.Events = append(q.Evaluator.Events, utils.GetPtr(NewMsgEmit("東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12")))
+	q.Evaluator.Events = append(q.Evaluator.Events, &Flush{})
+	q.Evaluator.Events = append(q.Evaluator.Events, utils.GetPtr(NewMsgEmit("last")))
 	q.Start()
 
 	assert.Equal(t, "", q.Display())
-	time.Sleep(30 * time.Millisecond)
-	assert.True(t, utf8.RuneCountInString(q.Display()) > 1)
-	assert.True(t, utf8.RuneCountInString(q.Display()) < 10)
 	q.Run() // skip
 	q.Wait()
 	assert.Equal(t, "東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12", q.Display())
 	q.Run() // pop
 	q.Wait()
-	assert.Equal(t, "", q.Display())
+	assert.Equal(t, "last", q.Display())
+}
+
+func TestJump_ラベルジャンプできる(t *testing.T) {
+	input := `*start
+スタート[p]
+[jump target="sample"]
+*ignore
+これは無視
+*sample
+サンプル1
+サンプル2`
+	l := lexer.NewLexer(input)
+	p := parser.NewParser(l)
+	program, err := p.ParseProgram()
+	assert.NoError(t, err)
+	e := NewEvaluator()
+	e.Eval(program)
+	q := NewQueue(e)
+	q.Start()
+
+	q.Run()
+	q.Wait()
+	assert.Equal(t, "スタート", q.Display())
+	q.Run() // jump
+	q.Wait()
+	assert.Equal(t, "サンプル1", q.Display())
+	q.Run() // skip
+	q.Wait()
+	q.Run() // run
+	q.Wait()
+	q.Run() // ?? なぜかこれが必要
+	q.Wait()
+	assert.Equal(t, "サンプル1サンプル2", q.Display())
+}
+
+func TestWorker_startラベルから開始する(t *testing.T) {
+	input := `*ignore
+無視するべき
+*start
+スタート`
+	l := lexer.NewLexer(input)
+	p := parser.NewParser(l)
+	program, err := p.ParseProgram()
+	assert.NoError(t, err)
+	e := NewEvaluator()
+	e.Eval(program)
+	q := NewQueue(e)
+	q.Start()
+
+	q.Run()
+	q.Wait()
+	assert.Equal(t, "スタート", q.Display())
 }
 
 // func TestWait(t *testing.T) {

@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// 別packageに移したいが、ここで参照があるためできない
 type Event interface {
 	Run(*Queue)
 }
@@ -75,6 +76,7 @@ type Flush struct{}
 
 func (c *Flush) Run(q *Queue) {
 	q.buf = ""
+	q.Pop()
 	q.wg.Done()
 	return
 }
@@ -87,6 +89,7 @@ type ChangeBg struct {
 
 func (c *ChangeBg) Run(q *Queue) {
 	q.Pop()
+	q.wg.Done()
 	return
 }
 
@@ -97,6 +100,7 @@ type LineEndWait struct{}
 
 func (l *LineEndWait) Run(q *Queue) {
 	q.buf = q.buf + "\n"
+	q.wg.Done()
 	return
 }
 
@@ -110,6 +114,7 @@ type Wait struct {
 func (w *Wait) Run(q *Queue) {
 	time.Sleep(w.DurationMsec)
 	q.buf = ""
+	q.wg.Done()
 	return
 }
 
@@ -121,6 +126,9 @@ type Jump struct {
 }
 
 func (j *Jump) Run(q *Queue) {
+	q.Evaluator.Play(j.Target)
+	q.Pop() // 次イベントの先頭を読み込み
+	q.wg.Done()
 	return
 }
 
@@ -130,6 +138,6 @@ func (j *Jump) Run(q *Queue) {
 type NotImplement struct{}
 
 func (l *NotImplement) Run(q *Queue) {
-	q.buf = ""
+	q.wg.Done()
 	return
 }

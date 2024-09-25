@@ -29,9 +29,9 @@ aiueo
 	e := NewEvaluator()
 	e.Eval(program)
 	{
-		events := e.Play("start")
+		e.Play("start")
 		results := []string{}
-		for _, e := range events {
+		for _, e := range e.Events {
 			switch event := e.(type) {
 			case *MsgEmit:
 				results = append(results, event.Body)
@@ -60,9 +60,9 @@ aiueo
 		assert.Equal(t, expect, results)
 	}
 	{
-		events := e.Play("example1")
+		e.Play("example1")
 		results := []string{}
-		for _, e := range events {
+		for _, e := range e.Events {
 			switch event := e.(type) {
 			case *MsgEmit:
 				results = append(results, event.Body)

@@ -70,16 +70,15 @@ func (e *Evaluator) Eval(node ast.Node) Event {
 	return nil
 }
 
-// 指定ラベルを再生する
-func (e *Evaluator) Play(label string) []Event {
+// 指定ラベルの内容でEventsを更新する
+func (e *Evaluator) Play(label string) {
 	block, ok := e.LabelMap[label]
 	if !ok {
 		e.errors = append(e.errors, fmt.Errorf("指定ラベルが存在しない %s", label))
-		return e.Events
+		return
 	}
-	e.Events = []Event{}
+	e.Events = []Event{} // 初期化
 	e.Eval(block)
-	return e.Events
 }
 
 func (e *Evaluator) evalProgram(program *ast.Program) Event {

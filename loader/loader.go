@@ -17,8 +17,8 @@ func NewQueueFromText(text string) (event.Queue, error) {
 	}
 	e := event.NewEvaluator()
 	e.Eval(program)
-	q := event.NewQueue()
-	q.Events = e.Events
+	q := event.NewQueue(e)
+	q.Evaluator.Events = e.Events
 
 	return q, nil
 }
