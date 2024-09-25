@@ -23,7 +23,8 @@ aiueo
 
 	l := lexer.NewLexer(input)
 	p := parser.NewParser(l)
-	program := p.ParseProgram()
+	program, err := p.ParseProgram()
+	assert.NoError(t, err)
 
 	e := NewEvaluator()
 	e.Eval(program)

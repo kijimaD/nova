@@ -9,14 +9,17 @@ import (
 
 // 依存関係のせいで、適当に配置できない
 // スクリプトからキューを初期化する
-func NewQueueFromText(text string) worker.Queue {
+func NewQueueFromText(text string) (worker.Queue, error) {
 	l := lexer.NewLexer(text)
 	p := parser.NewParser(l)
-	program := p.ParseProgram()
+	program, err := p.ParseProgram()
+	if err != nil {
+		return worker.Queue{}, err
+	}
 	e := evaluator.NewEvaluator()
 	e.Eval(program)
 	q := worker.NewQueue()
 	q.Events = e.Events
 
-	return q
+	return q, nil
 }

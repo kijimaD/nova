@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/kijimaD/nov/token"
 
@@ -52,6 +53,7 @@ func NewParser(l *lexer.Lexer) *Parser {
 
 	// 前置トークン
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+	p.registerPrefix(token.NEWLINE, p.parseNewLineLiteral)
 	p.registerPrefix(token.TEXT, p.parseTextLiteral)
 	p.registerPrefix(token.LBRACKET, p.parseCmdLiteral)
 	p.registerPrefix(token.ASTERISK, p.parseLabelLiteral)
@@ -84,7 +86,7 @@ func (p *Parser) nextToken() {
 }
 
 // パースを開始する。トークンを1つずつ辿る
-func (p *Parser) ParseProgram() *ast.Program {
+func (p *Parser) ParseProgram() (*ast.Program, error) {
 	program := &ast.Program{}
 	program.Statements = []ast.Statement{}
 
@@ -95,8 +97,11 @@ func (p *Parser) ParseProgram() *ast.Program {
 		}
 		p.nextToken()
 	}
+	if len(p.errors) != 0 {
+		return nil, fmt.Errorf(strings.Join(p.errors, ","))
+	}
 
-	return program
+	return program, nil
 }
 
 // 文をパースする。トークンの型によって適用関数を変える
@@ -188,11 +193,10 @@ func (p *Parser) parseTextLiteral() ast.Expression {
 // [p]
 func (p *Parser) parseCmdLiteral() ast.Expression {
 	lit := &ast.CmdLiteral{Token: p.curToken}
-	p.nextToken()
+	p.nextToken() // -> image
 	ident := ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 	lit.FuncName = ident
 
-	p.expectPeek(token.IDENT)
 	lit.Parameters = p.parseCmdParameters()
 
 	p.nextToken()
@@ -201,26 +205,26 @@ func (p *Parser) parseCmdLiteral() ast.Expression {
 }
 
 // 引数をパース
+// storage="test.png"
+// 0~任意の組のパラメータがあるので、ループ内で次のトークンに進むようにする
 func (p *Parser) parseCmdParameters() ast.NamedParams {
 	namedParams := ast.NamedParams{}
 	namedParams.Map = map[string]string{}
 
-	if p.peekTokenIs(token.RBRACKET) {
-		p.errors = append(p.errors, fmt.Sprintf("シンタックスエラー: パースすべきパラメータが存在しなかった: %s", p.curToken.Literal))
-	}
-
 	for !p.peekTokenIs(token.RBRACKET) {
+		p.nextToken() // -> storage
+
 		name := ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 		if !p.peekTokenIs(token.EQUAL) {
 			p.errors = append(p.errors, fmt.Sprintf("シンタックスエラー: EQUALがない: %s", p.curToken.Literal))
 			break
 		}
-		p.nextToken()
+		p.nextToken() // -> =
 		if !p.peekTokenIs(token.STRING) {
 			p.errors = append(p.errors, fmt.Sprintf("シンタックスエラー: STRINGがない: %s", p.curToken.Literal))
 			break
 		}
-		p.nextToken()
+		p.nextToken() // -> "test.png"
 		namedParams.Map[name.Value] = p.curToken.Literal
 
 		if p.peekTokenIs(token.RBRACKET) {
@@ -230,8 +234,6 @@ func (p *Parser) parseCmdParameters() ast.NamedParams {
 			p.errors = append(p.errors, "対応する右ブラケットが存在しなかったため、末尾まで到達した")
 			break
 		}
-
-		p.nextToken()
 	}
 
 	return namedParams
@@ -274,4 +276,9 @@ func (p *Parser) parseLabelLiteral() ast.Expression {
 	lit.Body = p.parseBlockStatement()
 
 	return lit
+}
+
+// no prefix functionになるのでとりあえず追加した
+func (p *Parser) parseNewLineLiteral() ast.Expression {
+	return nil
 }

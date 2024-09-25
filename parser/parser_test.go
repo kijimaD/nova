@@ -14,7 +14,8 @@ func TestParsingIndexExpressions(t *testing.T) {
 
 	l := lexer.NewLexer(input)
 	p := NewParser(l)
-	program := p.ParseProgram()
+	program, err := p.ParseProgram()
+	assert.NoError(t, err)
 
 	{
 		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
@@ -51,7 +52,8 @@ func TestParseCmdExpression(t *testing.T) {
 
 	l := lexer.NewLexer(input)
 	p := NewParser(l)
-	program := p.ParseProgram()
+	program, err := p.ParseProgram()
+	assert.NoError(t, err)
 
 	s := program.Statements[0]
 	stmt, ok := s.(*ast.ExpressionStatement)
@@ -71,17 +73,19 @@ func TestParseCmdExpression_シンタックスエラーを捕捉できる(t *tes
 
 		l := lexer.NewLexer(input)
 		p := NewParser(l)
-		_ = p.ParseProgram()
+		_, err := p.ParseProgram()
+		assert.Error(t, err)
 
 		assert.Equal(t, 1, len(p.Errors()))
-		assert.Contains(t, p.Errors()[0], "パースすべきパラメータが存在しなかった")
+		assert.Contains(t, p.Errors()[0], "シンタックスエラー: EQUALがない")
 	}
 	{
 		input := `[example a=]`
 
 		l := lexer.NewLexer(input)
 		p := NewParser(l)
-		_ = p.ParseProgram()
+		_, err := p.ParseProgram()
+		assert.Error(t, err)
 
 		assert.Equal(t, 1, len(p.Errors()))
 		assert.Contains(t, p.Errors()[0], "STRINGがない")
@@ -91,7 +95,8 @@ func TestParseCmdExpression_シンタックスエラーを捕捉できる(t *tes
 
 		l := lexer.NewLexer(input)
 		p := NewParser(l)
-		_ = p.ParseProgram()
+		_, err := p.ParseProgram()
+		assert.Error(t, err)
 
 		assert.Equal(t, 1, len(p.Errors()))
 		assert.Contains(t, p.Errors()[0], "対応する右ブラケットが存在しなかったため、末尾まで到達した")
@@ -108,7 +113,8 @@ func TestParsingLabelExpression(t *testing.T) {
 
 	l := lexer.NewLexer(input)
 	p := NewParser(l)
-	program := p.ParseProgram()
+	program, err := p.ParseProgram()
+	assert.NoError(t, err)
 
 	{
 		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
