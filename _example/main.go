@@ -24,76 +24,28 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/kijimaD/nov/event"
+	"github.com/kijimaD/nov/lexer"
+	"github.com/kijimaD/nov/parser"
 )
 
-//go:embed NotoSansArabic-Regular.ttf
-var arabicTTF []byte
-
-var arabicFaceSource *text.GoTextFaceSource
-
-func init() {
-	s, err := text.NewGoTextFaceSource(bytes.NewReader(arabicTTF))
-	if err != nil {
-		log.Fatal(err)
-	}
-	arabicFaceSource = s
-}
-
-//go:embed NotoSansDevanagari-Regular.ttf
-var devanagariTTF []byte
-
-var devanagariFaceSource *text.GoTextFaceSource
-
-func init() {
-	s, err := text.NewGoTextFaceSource(bytes.NewReader(devanagariTTF))
-	if err != nil {
-		log.Fatal(err)
-	}
-	devanagariFaceSource = s
-}
-
-//go:embed NotoSansThai-Regular.ttf
-var thaiTTF []byte
-
-var thaiFaceSource *text.GoTextFaceSource
-
-func init() {
-	s, err := text.NewGoTextFaceSource(bytes.NewReader(thaiTTF))
-	if err != nil {
-		log.Fatal(err)
-	}
-	thaiFaceSource = s
-}
-
-//go:embed NotoSansMyanmar-Regular.ttf
-var myanmarTTF []byte
-
-var myanmarFaceSource *text.GoTextFaceSource
-
-func init() {
-	s, err := text.NewGoTextFaceSource(bytes.NewReader(myanmarTTF))
-	if err != nil {
-		log.Fatal(err)
-	}
-	myanmarFaceSource = s
-}
-
-//go:embed NotoSansMongolian-Regular.ttf
-var mongolianTTF []byte
-
-var mongolianFaceSource *text.GoTextFaceSource
-
-func init() {
-	s, err := text.NewGoTextFaceSource(bytes.NewReader(mongolianTTF))
-	if err != nil {
-		log.Fatal(err)
-	}
-	mongolianFaceSource = s
-}
+const input = `*start
+親譲りの無鉄砲で小供の時から損ばかりして居る。
+小学校に居る時分学校の二階から飛び降りて一週間程腰を抜かした事がある。
+なぜそんな無闇をしたと聞く人があるかも知れぬ。
+別段深い理由でもない。新築の二階から首を出して居たら、
+同級生の一人が冗談に、いくら威張つても、そこから飛び降りる事は出来まい。
+弱虫やーい。と囃したからである。
+小使に負ぶさつて帰つて来た時、おやぢが大きな眼をして二階位から
+飛び降りて腰を抜かす奴があるかと云つたから、
+此次は抜かさずに飛んで見せますと答へた。
+[jump target="start"]`
 
 var japaneseFaceSource *text.GoTextFaceSource
+var eventQ event.Queue
 
 func init() {
 	s, err := text.NewGoTextFaceSource(bytes.NewReader(fonts.MPlus1pRegular_ttf))
@@ -101,17 +53,33 @@ func init() {
 		log.Fatal(err)
 	}
 	japaneseFaceSource = s
+
+	l := lexer.NewLexer(input)
+	p := parser.NewParser(l)
+	program, err := p.ParseProgram()
+	if err != nil {
+		log.Fatal(err)
+	}
+	e := event.NewEvaluator()
+	e.Eval(program)
+	eventQ = event.NewQueue(e)
+	eventQ.Start()
 }
 
 const (
 	screenWidth  = 640
 	screenHeight = 640
+	fontSize     = 12
 )
 
 type Game struct {
 }
 
 func (g *Game) Update() error {
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		eventQ.Run()
+	}
+
 	return nil
 }
 
@@ -119,92 +87,14 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	gray := color.RGBA{0x80, 0x80, 0x80, 0xff}
 
 	{
-		const arabicText = "لمّا كان الاعتراف بالكرامة المتأصلة في جميع"
+		japaneseText := eventQ.Display()
 		f := &text.GoTextFace{
-			Source:    arabicFaceSource,
-			Direction: text.DirectionRightToLeft,
-			Size:      24,
-			Language:  language.Arabic,
+			Source:   japaneseFaceSource,
+			Size:     fontSize,
+			Language: language.Japanese,
 		}
-		x, y := screenWidth-20, 40
-		w, h := text.Measure(arabicText, f, 0)
-		// The left upper point is not x but x-w, since the text runs in the rigth-to-left direction.
-		vector.DrawFilledRect(screen, float32(x)-float32(w), float32(y), float32(w), float32(h), gray, false)
-		op := &text.DrawOptions{}
-		op.GeoM.Translate(float64(x), float64(y))
-		text.Draw(screen, arabicText, f, op)
-	}
-	{
-		const hindiText = "चूंकि मानव परिवार के सभी सदस्यों के जन्मजात गौरव और समान"
-		f := &text.GoTextFace{
-			Source:   devanagariFaceSource,
-			Size:     24,
-			Language: language.Hindi,
-		}
-		x, y := 20, 100
-		w, h := text.Measure(hindiText, f, 0)
-		vector.DrawFilledRect(screen, float32(x), float32(y), float32(w), float32(h), gray, false)
-		op := &text.DrawOptions{}
-		op.GeoM.Translate(float64(x), float64(y))
-		text.Draw(screen, hindiText, f, op)
-	}
-	{
-		const myanmarText = "လူခပ်သိမ်း၏ မျိုးရိုးဂုဏ်သိက္ခာနှင့်တကွ"
-		f := &text.GoTextFace{
-			Source:   myanmarFaceSource,
-			Size:     24,
-			Language: language.Burmese,
-		}
-		x, y := 20, 160
-		w, h := text.Measure(myanmarText, f, 0)
-		vector.DrawFilledRect(screen, float32(x), float32(y), float32(w), float32(h), gray, false)
-		op := &text.DrawOptions{}
-		op.GeoM.Translate(float64(x), float64(y))
-		text.Draw(screen, myanmarText, f, op)
-	}
-	{
-		const thaiText = "โดยที่การยอมรับนับถือเกียรติศักดิ์ประจำตัว"
-		f := &text.GoTextFace{
-			Source:   thaiFaceSource,
-			Size:     24,
-			Language: language.Thai,
-		}
-		x, y := 20, 220
-		w, h := text.Measure(thaiText, f, 0)
-		vector.DrawFilledRect(screen, float32(x), float32(y), float32(w), float32(h), gray, false)
-		op := &text.DrawOptions{}
-		op.GeoM.Translate(float64(x), float64(y))
-		text.Draw(screen, thaiText, f, op)
-	}
-	{
-		const mongolianText = "ᠬᠦᠮᠦᠨ ᠪᠦᠷ ᠲᠥᠷᠥᠵᠦ ᠮᠡᠨᠳᠡᠯᠡᠬᠦ\nᠡᠷᠬᠡ ᠴᠢᠯᠥᠭᠡ ᠲᠡᠢ᠂ ᠠᠳᠠᠯᠢᠬᠠᠨ"
-		f := &text.GoTextFace{
-			Source:    mongolianFaceSource,
-			Direction: text.DirectionTopToBottomAndLeftToRight,
-			Size:      24,
-			Language:  language.Mongolian,
-			// language.Mongolian.Script() returns "Cyrl" (Cyrillic), but we want Mongolian script here.
-			Script: language.MustParseScript("Mong"),
-		}
-		const lineSpacing = 48
-		x, y := 20, 280
-		w, h := text.Measure(mongolianText, f, lineSpacing)
-		vector.DrawFilledRect(screen, float32(x), float32(y), float32(w), float32(h), gray, false)
-		op := &text.DrawOptions{}
-		op.GeoM.Translate(float64(x), float64(y))
-		op.LineSpacing = lineSpacing
-		text.Draw(screen, mongolianText, f, op)
-	}
-	{
-		const japaneseText = "あのイーハトーヴォの\nすきとおった風、\n夏でも底に冷たさを\nもつ青いそら…\nあHello World.あ"
-		f := &text.GoTextFace{
-			Source:    japaneseFaceSource,
-			Direction: text.DirectionTopToBottomAndRightToLeft,
-			Size:      24,
-			Language:  language.Japanese,
-		}
-		const lineSpacing = 48
-		x, y := screenWidth-20, 280
+		const lineSpacing = fontSize + 4
+		x, y := 0, 280
 		w, h := text.Measure(japaneseText, f, lineSpacing)
 		// The left upper point is not x but x-w, since the text runs in the rigth-to-left direction as the secondary direction.
 		vector.DrawFilledRect(screen, float32(x)-float32(w), float32(y), float32(w), float32(h), gray, false)
