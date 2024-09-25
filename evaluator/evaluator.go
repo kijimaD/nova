@@ -2,7 +2,6 @@ package evaluator
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/kijimaD/nov/ast"
@@ -13,6 +12,7 @@ import (
 type Evaluator struct {
 	Events   []worker.Event
 	LabelMap map[string]*ast.BlockStatement
+	errors   []error
 }
 
 func NewEvaluator() *Evaluator {
@@ -46,7 +46,8 @@ func (e *Evaluator) Eval(node ast.Node) worker.Event {
 		case token.CMD_WAIT:
 			duration, err := time.ParseDuration(fmt.Sprintf("%sms", node.Parameters.Map["time"]))
 			if err != nil {
-				log.Fatal(err)
+				e.errors = append(e.errors, err)
+				return nil
 			}
 			eve = &worker.Wait{DurationMsec: duration}
 		}
@@ -61,7 +62,8 @@ func (e *Evaluator) Eval(node ast.Node) worker.Event {
 		return e.Eval(node.Body)
 	case nil:
 	default:
-		log.Fatal(fmt.Sprintf("error: 未登録のASTを検知した %#v", node))
+		e.errors = append(e.errors, fmt.Errorf("error: 未登録のASTを検知した %#v", node))
+		return nil
 	}
 
 	return nil
@@ -71,7 +73,8 @@ func (e *Evaluator) Eval(node ast.Node) worker.Event {
 func (e *Evaluator) Play(label string) []worker.Event {
 	block, ok := e.LabelMap[label]
 	if !ok {
-		log.Fatal("指定されたlabelが存在しない")
+		e.errors = append(e.errors, fmt.Errorf("指定ラベルが存在しない %s", label))
+		return e.Events
 	}
 	e.Events = []worker.Event{}
 	e.Eval(block)
