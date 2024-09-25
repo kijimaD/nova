@@ -19,7 +19,8 @@ aiueo
 [image source="test.png"]
 [wait time="100"]
 *example1
-これはexample1です[l]`
+これはexample1です[l]
+[jump target="start"]`
 
 	l := lexer.NewLexer(input)
 	p := parser.NewParser(l)
@@ -68,6 +69,8 @@ aiueo
 				results = append(results, event.Body)
 			case *worker.LineEndWait:
 				results = append(results, "lineEndWait")
+			case *worker.Jump:
+				results = append(results, fmt.Sprintf("jump target=%s", event.Target))
 			default:
 				t.Errorf("未処理のイベントが指定された: %v", event)
 			}
@@ -75,6 +78,7 @@ aiueo
 		expect := []string{
 			"これはexample1です",
 			"lineEndWait",
+			"jump target=start",
 		}
 		assert.Equal(t, expect, results)
 	}

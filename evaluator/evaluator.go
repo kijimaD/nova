@@ -50,6 +50,8 @@ func (e *Evaluator) Eval(node ast.Node) worker.Event {
 				return nil
 			}
 			eve = &worker.Wait{DurationMsec: duration}
+		case token.CMD_JUMP:
+			eve = &worker.Jump{Target: node.Parameters.Map["target"]}
 		}
 		e.Events = append(e.Events, eve)
 		return eve

@@ -115,7 +115,7 @@ func (w *Wait) Run(q *Queue) {
 
 // ================
 
-// ジャンプ
+// ジャンプ。別のラベルへ遷移する
 type Jump struct {
 	Target string
 }
