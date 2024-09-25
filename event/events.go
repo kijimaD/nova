@@ -29,7 +29,7 @@ const (
 type MsgEmit struct {
 	// パーサーから渡ってきた表示対象の文字列
 	Body string
-	// 終了
+	// 終了判定チャンネル。closeしてれば終了
 	DoneChan chan bool
 }
 
@@ -41,6 +41,7 @@ func NewMsgEmit(body string) MsgEmit {
 }
 
 func (e *MsgEmit) Run(q *Queue) {
+	// 初期化漏れ対策
 	if e.DoneChan == nil {
 		log.Fatal("doneChan is nil")
 	}
@@ -65,7 +66,6 @@ func (e *MsgEmit) Run(q *Queue) {
 }
 
 func (e *MsgEmit) Skip() {
-	e.DoneChan <- true
 	close(e.DoneChan)
 }
 

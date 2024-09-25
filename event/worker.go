@@ -1,6 +1,7 @@
 package event
 
 import (
+	"log"
 	"sync"
 )
 
@@ -73,12 +74,15 @@ func (q *Queue) Run() {
 		select {
 		case _, ok := <-v.DoneChan:
 			if !ok {
-				// closeしているので終了
+				// チャネルがcloseしている(完了している)ので次へ
 				q.Pop()
 			}
 		default:
+			// チャネルがクローズされているわけでもなく、値もまだ来ていない
 			q.Skip()
 		}
+	default:
+		log.Printf("想定してないイベントタイプ: %s", v)
 	}
 }
 
