@@ -25,6 +25,10 @@ const (
 	TaskFinish = TaskStatus("FINISH")
 )
 
+var (
+	messageSpeed = 20 * time.Millisecond
+)
+
 // メッセージ表示
 type MsgEmit struct {
 	// パーサーから渡ってきた表示対象の文字列
@@ -57,7 +61,7 @@ func (e *MsgEmit) Run(q *Queue) {
 		default:
 			// フラグが立ってないので1文字ずつ表示
 			q.buf += string(char)
-			time.Sleep(20 * time.Millisecond)
+			time.Sleep(messageSpeed)
 		}
 	}
 	// たまにSkipのcloseとかぶってpanicする
