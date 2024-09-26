@@ -29,22 +29,14 @@ import (
 	"github.com/kijimaD/nov/parser"
 )
 
-const input = `*start
-親譲りの無鉄砲で小供の時から損ばかりして居る。小学校に居る時分学校の二階から飛び降りて一週間程腰を抜かした事がある。なぜそんな無闇をしたと聞く人があるかも知れぬ。
-[p]
-別段深い理由でもない。新築の二階から首を出して居たら、同級生の一人が冗談に、いくら威張つても、そこから飛び降りる事は出来まい。弱虫やーい。と囃したからである。
-[p]
-小使に負ぶさつて帰つて来た時、おやぢが大きな眼をして二階位から飛び降りて腰を抜かす奴があるかと云つたから、此次は抜かさずに飛んで見せますと答へた。
-[p]
-[jump target="start"]
-*ignore
-未使用ラベル`
-
 var japaneseFaceSource *text.GoTextFaceSource
 var eventQ event.Queue
 
 //go:embed JF-Dot-Kappa20B.ttf
 var font []byte
+
+//go:embed input.sce
+var input []byte
 
 func init() {
 	s, err := text.NewGoTextFaceSource(bytes.NewReader(font))
@@ -53,7 +45,7 @@ func init() {
 	}
 	japaneseFaceSource = s
 
-	l := lexer.NewLexer(input)
+	l := lexer.NewLexer(string(input))
 	p := parser.NewParser(l)
 	program, err := p.ParseProgram()
 	if err != nil {

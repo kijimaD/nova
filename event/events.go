@@ -127,6 +127,7 @@ func (c *ChangeBg) Run(q *Queue) {
 type LineEndWait struct{}
 
 func (l *LineEndWait) Run(q *Queue) {
+	q.buf += "\n"
 	q.Pop()
 	q.wg.Done()
 	return
