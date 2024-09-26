@@ -60,10 +60,23 @@ func (e *MsgEmit) Run(q *Queue) {
 			time.Sleep(20 * time.Millisecond)
 		}
 	}
-	close(e.DoneChan)
+	// たまにSkipのcloseとかぶってpanicする
+	// 使い方を間違っている感じがする...
+	if isChanOpen(e.DoneChan) {
+		close(e.DoneChan)
+	}
 	q.wg.Done()
 
 	return
+}
+
+func isChanOpen(ch chan bool) bool {
+	select {
+	case _, ok := <-ch:
+		return ok // closeしてればfalseになる
+	default:
+		return true // open
+	}
 }
 
 func (e *MsgEmit) Skip() {
