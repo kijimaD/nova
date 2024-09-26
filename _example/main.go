@@ -22,7 +22,6 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/kijimaD/nov/event"
@@ -45,8 +44,11 @@ const input = `*start
 var japaneseFaceSource *text.GoTextFaceSource
 var eventQ event.Queue
 
+//go:embed JF-Dot-Kappa20B.ttf
+var font []byte
+
 func init() {
-	s, err := text.NewGoTextFaceSource(bytes.NewReader(fonts.MPlus1pRegular_ttf))
+	s, err := text.NewGoTextFaceSource(bytes.NewReader(font))
 	if err != nil {
 		log.Fatal(err)
 	}
