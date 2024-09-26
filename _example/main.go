@@ -37,6 +37,7 @@ const (
 	screenWidth  = 720
 	screenHeight = 720
 	fontSize     = 26
+	padding      = 40
 )
 
 var japaneseFaceSource *text.GoTextFaceSource
@@ -62,12 +63,14 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	{
+		// 背景画像
 		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(0, 0)
+		op.GeoM.Translate(0, screenHeight/4)
 		screen.DrawImage(g.bgImage, op)
 	}
 
 	{
+		// 背景色
 		black := color.RGBA{0x00, 0x00, 0x00, 0xa0}
 		vector.DrawFilledRect(screen, 0, 0, screenWidth, screenHeight, black, false)
 	}
@@ -80,7 +83,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			Language: language.Japanese,
 		}
 		const lineSpacing = fontSize + 4
-		const padding = 20
 		x, y := padding, padding
 		op := &text.DrawOptions{}
 		op.GeoM.Translate(float64(x), float64(y))
