@@ -49,6 +49,7 @@ func (e *MsgEmit) Run(q *Queue) {
 	if e.DoneChan == nil {
 		log.Fatal("doneChan is nil")
 	}
+	e.Body = autoNewline(e.Body, 24)
 
 	for i, char := range e.Body {
 		select {
@@ -75,13 +76,21 @@ func (e *MsgEmit) Run(q *Queue) {
 	return
 }
 
-func isChanOpen(ch chan bool) bool {
-	select {
-	case _, ok := <-ch:
-		return ok // closeしてればfalseになる
-	default:
-		return true // open
+func autoNewline(message string, chunkSize int) string {
+	runes := []rune(message) // Unicode の文字列処理に対応
+	var result string
+
+	for i := 0; i < len(runes); i += chunkSize {
+		end := i + chunkSize
+		if end > len(runes) {
+			end = len(runes)
+		}
+		result += string(runes[i:end])
+		if end < len(runes) {
+			result += "\n"
+		}
 	}
+	return result
 }
 
 func (e *MsgEmit) Skip() {
@@ -118,6 +127,7 @@ func (c *ChangeBg) Run(q *Queue) {
 type LineEndWait struct{}
 
 func (l *LineEndWait) Run(q *Queue) {
+	q.buf += "\n"
 	q.Pop()
 	q.wg.Done()
 	return
