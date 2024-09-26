@@ -79,7 +79,8 @@ func TestRun_Skipを使わずに時間経過でも1回のRunで次のイベン�
 func TestJump_複数実行できる(t *testing.T) {
 	input := `*start
 サンプル1
-サンプル2`
+サンプル2[p]
+新文章`
 	l := lexer.NewLexer(input)
 	p := parser.NewParser(l)
 	program, err := p.ParseProgram()
@@ -98,6 +99,9 @@ func TestJump_複数実行できる(t *testing.T) {
 	assert.Equal(t, "サンプル1", q.Display())
 	q.Wait()
 	assert.Equal(t, "サンプル1サンプル2", q.Display())
+	q.Run()
+	q.Wait()
+	assert.Equal(t, "新文章", q.Display())
 }
 
 func TestJump_ラベルジャンプできる(t *testing.T) {
