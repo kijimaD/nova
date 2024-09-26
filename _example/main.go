@@ -16,7 +16,10 @@ package main
 
 import (
 	"bytes"
+	"embed"
 	_ "embed"
+	"image"
+	"image/color"
 	"log"
 
 	"golang.org/x/text/language"
@@ -24,26 +27,84 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/kijimaD/nov/event"
 	"github.com/kijimaD/nov/lexer"
 	"github.com/kijimaD/nov/parser"
 )
 
+const (
+	screenWidth  = 720
+	screenHeight = 720
+	fontSize     = 26
+)
+
 var japaneseFaceSource *text.GoTextFaceSource
 var eventQ event.Queue
-
-//go:embed JF-Dot-Kappa20B.ttf
-var font []byte
 
 //go:embed input.sce
 var input []byte
 
-func init() {
-	s, err := text.NewGoTextFaceSource(bytes.NewReader(font))
-	if err != nil {
-		log.Fatal(err)
+//go:embed file
+var FS embed.FS
+
+type Game struct {
+	bgImage *ebiten.Image
+}
+
+func (g *Game) Update() error {
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) || inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+		eventQ.Run()
 	}
-	japaneseFaceSource = s
+
+	return nil
+}
+
+func (g *Game) Draw(screen *ebiten.Image) {
+	{
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(0, 0)
+		screen.DrawImage(g.bgImage, op)
+	}
+
+	{
+		black := color.RGBA{0x00, 0x00, 0x00, 0xa0}
+		vector.DrawFilledRect(screen, 0, 0, screenWidth, screenHeight, black, false)
+	}
+
+	{
+		japaneseText := eventQ.Display()
+		f := &text.GoTextFace{
+			Source:   japaneseFaceSource,
+			Size:     fontSize,
+			Language: language.Japanese,
+		}
+		const lineSpacing = fontSize + 4
+		const padding = 20
+		x, y := padding, padding
+		op := &text.DrawOptions{}
+		op.GeoM.Translate(float64(x), float64(y))
+		op.LineSpacing = lineSpacing
+		text.Draw(screen, japaneseText, f, op)
+	}
+}
+
+func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
+	return screenWidth, screenHeight
+}
+
+func main() {
+	{
+		font, err := FS.ReadFile("file/JF-Dot-Kappa20B.ttf")
+		if err != nil {
+			log.Fatal(err)
+		}
+		s, err := text.NewGoTextFaceSource(bytes.NewReader(font))
+		if err != nil {
+			log.Fatal(err)
+		}
+		japaneseFaceSource = s
+	}
 
 	l := lexer.NewLexer(string(input))
 	p := parser.NewParser(l)
@@ -55,48 +116,23 @@ func init() {
 	e.Eval(program)
 	eventQ = event.NewQueue(e)
 	eventQ.Start()
-}
 
-const (
-	screenWidth  = 720
-	screenHeight = 720
-	fontSize     = 26
-)
-
-type Game struct{}
-
-func (g *Game) Update() error {
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) || inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-		eventQ.Run()
+	bs, err := FS.ReadFile("file/forest.jpg")
+	if err != nil {
+		log.Fatal(err)
+	}
+	img, _, err := image.Decode(bytes.NewReader(bs))
+	if err != nil {
+		log.Fatal(err)
+	}
+	eImg := ebiten.NewImageFromImage(img)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	return nil
-}
-
-func (g *Game) Draw(screen *ebiten.Image) {
-	japaneseText := eventQ.Display()
-	f := &text.GoTextFace{
-		Source:   japaneseFaceSource,
-		Size:     fontSize,
-		Language: language.Japanese,
-	}
-	const lineSpacing = fontSize + 4
-	const padding = 20
-	x, y := padding, padding
-	op := &text.DrawOptions{}
-	op.GeoM.Translate(float64(x), float64(y))
-	op.LineSpacing = lineSpacing
-	text.Draw(screen, japaneseText, f, op)
-}
-
-func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return screenWidth, screenHeight
-}
-
-func main() {
 	ebiten.SetWindowSize(screenWidth, screenHeight)
-	ebiten.SetWindowTitle("Text I18N (Ebitengine Demo)")
-	if err := ebiten.RunGame(&Game{}); err != nil {
+	ebiten.SetWindowTitle("demo")
+	if err := ebiten.RunGame(&Game{bgImage: eImg}); err != nil {
 		log.Fatal(err)
 	}
 }
