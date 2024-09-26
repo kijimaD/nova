@@ -60,6 +60,7 @@ func (e *MsgEmit) Run(q *Queue) {
 			time.Sleep(20 * time.Millisecond)
 		}
 	}
+	close(e.DoneChan)
 	q.wg.Done()
 
 	return
