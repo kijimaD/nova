@@ -17,16 +17,25 @@ package main
 import (
 	"bytes"
 	_ "embed"
+	"image/color"
 	"log"
 
 	"golang.org/x/text/language"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/kijimaD/nov/event"
 	"github.com/kijimaD/nov/lexer"
 	"github.com/kijimaD/nov/parser"
+)
+
+const (
+	screenWidth  = 720
+	screenHeight = 720
+	fontSize     = 26
 )
 
 var japaneseFaceSource *text.GoTextFaceSource
@@ -57,13 +66,9 @@ func init() {
 	eventQ.Start()
 }
 
-const (
-	screenWidth  = 720
-	screenHeight = 720
-	fontSize     = 26
-)
-
-type Game struct{}
+type Game struct {
+	bgImage *ebiten.Image
+}
 
 func (g *Game) Update() error {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) || inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
@@ -74,19 +79,32 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	japaneseText := eventQ.Display()
-	f := &text.GoTextFace{
-		Source:   japaneseFaceSource,
-		Size:     fontSize,
-		Language: language.Japanese,
+	{
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(0, 0)
+		screen.DrawImage(g.bgImage, op)
 	}
-	const lineSpacing = fontSize + 4
-	const padding = 20
-	x, y := padding, padding
-	op := &text.DrawOptions{}
-	op.GeoM.Translate(float64(x), float64(y))
-	op.LineSpacing = lineSpacing
-	text.Draw(screen, japaneseText, f, op)
+
+	{
+		black := color.RGBA{0x00, 0x00, 0x00, 0x50}
+		vector.DrawFilledRect(screen, 0, 0, screenWidth, screenHeight, black, false)
+	}
+
+	{
+		japaneseText := eventQ.Display()
+		f := &text.GoTextFace{
+			Source:   japaneseFaceSource,
+			Size:     fontSize,
+			Language: language.Japanese,
+		}
+		const lineSpacing = fontSize + 4
+		const padding = 20
+		x, y := padding, padding
+		op := &text.DrawOptions{}
+		op.GeoM.Translate(float64(x), float64(y))
+		op.LineSpacing = lineSpacing
+		text.Draw(screen, japaneseText, f, op)
+	}
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -94,9 +112,14 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 func main() {
+	img, _, err := ebitenutil.NewImageFromFile("./_example/forest.jpg")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("Text I18N (Ebitengine Demo)")
-	if err := ebiten.RunGame(&Game{}); err != nil {
+	if err := ebiten.RunGame(&Game{bgImage: img}); err != nil {
 		log.Fatal(err)
 	}
 }
