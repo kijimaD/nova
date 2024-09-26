@@ -42,33 +42,11 @@ const (
 var japaneseFaceSource *text.GoTextFaceSource
 var eventQ event.Queue
 
-//go:embed file/JF-Dot-Kappa20B.ttf
-var font []byte
-
 //go:embed input.sce
 var input []byte
 
 //go:embed file
 var FS embed.FS
-
-func init() {
-	s, err := text.NewGoTextFaceSource(bytes.NewReader(font))
-	if err != nil {
-		log.Fatal(err)
-	}
-	japaneseFaceSource = s
-
-	l := lexer.NewLexer(string(input))
-	p := parser.NewParser(l)
-	program, err := p.ParseProgram()
-	if err != nil {
-		log.Fatal(err)
-	}
-	e := event.NewEvaluator()
-	e.Eval(program)
-	eventQ = event.NewQueue(e)
-	eventQ.Start()
-}
 
 type Game struct {
 	bgImage *ebiten.Image
@@ -116,6 +94,29 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 func main() {
+	{
+		font, err := FS.ReadFile("file/JF-Dot-Kappa20B.ttf")
+		if err != nil {
+			log.Fatal(err)
+		}
+		s, err := text.NewGoTextFaceSource(bytes.NewReader(font))
+		if err != nil {
+			log.Fatal(err)
+		}
+		japaneseFaceSource = s
+	}
+
+	l := lexer.NewLexer(string(input))
+	p := parser.NewParser(l)
+	program, err := p.ParseProgram()
+	if err != nil {
+		log.Fatal(err)
+	}
+	e := event.NewEvaluator()
+	e.Eval(program)
+	eventQ = event.NewQueue(e)
+	eventQ.Start()
+
 	bs, err := FS.ReadFile("file/forest.jpg")
 	if err != nil {
 		log.Fatal(err)
