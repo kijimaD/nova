@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+        <script src="wasm_exec.js"></script>
+        <script>
+         // Polyfill
+         if (!WebAssembly.instantiateStreaming) {
+             WebAssembly.instantiateStreaming = async (resp, importObject) => {
+                 const source = await (await resp).arrayBuffer();
+                 return await WebAssembly.instantiate(source, importObject);
+             };
+         }
+
+         const go = new Go();
+         WebAssembly.instantiateStreaming(fetch("game.wasm"), go.importObject).then(result => {
+             document.getElementById("loading").classList.remove("active");
+             go.run(result.instance);
+         });
+        </script>
+        <link rel='stylesheet' href='loading.css' />
+    </head>
+
+    <body>
+        <div class="loading active" id="loading">
+            <div class="loading-txt">Now Loading...</div>
+        </div>
+    </body>
+</html>
