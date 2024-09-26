@@ -16,14 +16,15 @@ package main
 
 import (
 	"bytes"
+	"embed"
 	_ "embed"
+	"image"
 	"image/color"
 	"log"
 
 	"golang.org/x/text/language"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -41,11 +42,14 @@ const (
 var japaneseFaceSource *text.GoTextFaceSource
 var eventQ event.Queue
 
-//go:embed JF-Dot-Kappa20B.ttf
+//go:embed file/JF-Dot-Kappa20B.ttf
 var font []byte
 
 //go:embed input.sce
 var input []byte
+
+//go:embed file
+var FS embed.FS
 
 func init() {
 	s, err := text.NewGoTextFaceSource(bytes.NewReader(font))
@@ -86,7 +90,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 
 	{
-		black := color.RGBA{0x00, 0x00, 0x00, 0x50}
+		black := color.RGBA{0x00, 0x00, 0x00, 0xa0}
 		vector.DrawFilledRect(screen, 0, 0, screenWidth, screenHeight, black, false)
 	}
 
@@ -112,14 +116,22 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 func main() {
-	img, _, err := ebitenutil.NewImageFromFile("./_example/forest.jpg")
+	bs, err := FS.ReadFile("file/forest.jpg")
+	if err != nil {
+		log.Fatal(err)
+	}
+	img, _, err := image.Decode(bytes.NewReader(bs))
+	if err != nil {
+		log.Fatal(err)
+	}
+	eImg := ebiten.NewImageFromImage(img)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	ebiten.SetWindowSize(screenWidth, screenHeight)
-	ebiten.SetWindowTitle("Text I18N (Ebitengine Demo)")
-	if err := ebiten.RunGame(&Game{bgImage: img}); err != nil {
+	ebiten.SetWindowTitle("demo")
+	if err := ebiten.RunGame(&Game{bgImage: eImg}); err != nil {
 		log.Fatal(err)
 	}
 }
