@@ -30,16 +30,20 @@ import (
 )
 
 const input = `*start
-親譲りの無鉄砲で小供の時から損ばかりして居る。[l]
-小学校に居る時分学校の二階から[l]飛び降りて一週間程腰を抜かした事がある。
+親譲りの無鉄砲で小供の時から損ばかりして居る。
+[l]小学校に居る時分学校の二階から[l]飛び降りて
+一週間程腰を抜かした事がある。
 なぜそんな無闇をしたと聞く人があるかも知れぬ。
 別段深い理由でもない。新築の二階から首を出して居たら、
-同級生の一人が冗談に、いくら威張つても、そこから飛び降りる事は出来まい。[p]
-弱虫やーい。と囃したからである。
+同級生の一人が冗談に、いくら威張つても、
+そこから飛び降りる事は出来まい。
+弱虫やーい。と囃したからである。[p]
 小使に負ぶさつて帰つて来た時、おやぢが大きな眼をして二階位から
 飛び降りて腰を抜かす奴があるかと云つたから、
 此次は抜かさずに飛んで見せますと答へた。[p]
-[jump target="start"]`
+[jump target="start"]
+*ignore
+未使用ラベル`
 
 var japaneseFaceSource *text.GoTextFaceSource
 var eventQ event.Queue
@@ -67,15 +71,15 @@ func init() {
 }
 
 const (
-	screenWidth  = 640
-	screenHeight = 640
+	screenWidth  = 720
+	screenHeight = 720
 	fontSize     = 20
 )
 
 type Game struct{}
 
 func (g *Game) Update() error {
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) || inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 		eventQ.Run()
 	}
 
@@ -90,7 +94,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		Language: language.Japanese,
 	}
 	const lineSpacing = fontSize + 4
-	const padding = 8
+	const padding = 20
 	x, y := padding, padding
 	op := &text.DrawOptions{}
 	op.GeoM.Translate(float64(x), float64(y))
