@@ -1,9 +1,9 @@
 package loader
 
 import (
-	"github.com/kijimaD/nov/event"
-	"github.com/kijimaD/nov/lexer"
-	"github.com/kijimaD/nov/parser"
+	"github.com/kijimaD/nova/event"
+	"github.com/kijimaD/nova/lexer"
+	"github.com/kijimaD/nova/parser"
 )
 
 // 依存関係のせいで、適当に配置できない

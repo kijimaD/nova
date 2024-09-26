@@ -28,9 +28,9 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
-	"github.com/kijimaD/nov/event"
-	"github.com/kijimaD/nov/lexer"
-	"github.com/kijimaD/nov/parser"
+	"github.com/kijimaD/nova/event"
+	"github.com/kijimaD/nova/lexer"
+	"github.com/kijimaD/nova/parser"
 )
 
 const (

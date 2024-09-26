@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"strings"
 
-	"github.com/kijimaD/nov/token"
+	"github.com/kijimaD/nova/token"
 )
 
 type Node interface {

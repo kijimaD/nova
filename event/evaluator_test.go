@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/kijimaD/nov/lexer"
-	"github.com/kijimaD/nov/parser"
+	"github.com/kijimaD/nova/lexer"
+	"github.com/kijimaD/nova/parser"
 
 	"github.com/stretchr/testify/assert"
 )

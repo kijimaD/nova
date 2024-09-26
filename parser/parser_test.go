@@ -3,8 +3,8 @@ package parser
 import (
 	"testing"
 
-	"github.com/kijimaD/nov/ast"
-	"github.com/kijimaD/nov/lexer"
+	"github.com/kijimaD/nova/ast"
+	"github.com/kijimaD/nova/lexer"
 
 	"github.com/stretchr/testify/assert"
 )

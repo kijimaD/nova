@@ -5,9 +5,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/kijimaD/nov/lexer"
-	"github.com/kijimaD/nov/parser"
-	"github.com/kijimaD/nov/utils"
+	"github.com/kijimaD/nova/lexer"
+	"github.com/kijimaD/nova/parser"
+	"github.com/kijimaD/nova/utils"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kijimaD/nov/token"
+	"github.com/kijimaD/nova/token"
 
-	"github.com/kijimaD/nov/ast"
-	"github.com/kijimaD/nov/lexer"
+	"github.com/kijimaD/nova/ast"
+	"github.com/kijimaD/nova/lexer"
 )
 
 type Parser struct {

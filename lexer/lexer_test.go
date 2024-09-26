@@ -3,7 +3,7 @@ package lexer
 import (
 	"testing"
 
-	"github.com/kijimaD/nov/token"
+	"github.com/kijimaD/nova/token"
 
 	"github.com/stretchr/testify/assert"
 )

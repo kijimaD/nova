@@ -38,8 +38,8 @@ COPY . .
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     GO111MODULE=on \
-    go build -o ./bin/nov ./_example/main.go
-RUN upx-ucl --best --ultra-brute ./bin/nov
+    go build -o ./bin/nova ./_example/main.go
+RUN upx-ucl --best --ultra-brute ./bin/nova
 
 ###########
 # release #
@@ -47,9 +47,9 @@ RUN upx-ucl --best --ultra-brute ./bin/nov
 
 FROM gcr.io/distroless/base-debian11:latest AS release
 
-COPY --from=builder /build/bin/nov /bin/
+COPY --from=builder /build/bin/nova /bin/
 WORKDIR /work
-ENTRYPOINT ["nov"]
+ENTRYPOINT ["nova"]
 
 ########
 # node #

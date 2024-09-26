@@ -1,4 +1,4 @@
-module github.com/kijimaD/nov
+module github.com/kijimaD/nova
 
 go 1.20
 

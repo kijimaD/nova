@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kijimaD/nov/ast"
-	"github.com/kijimaD/nov/token"
+	"github.com/kijimaD/nova/ast"
+	"github.com/kijimaD/nova/token"
 )
 
 type Evaluator struct {

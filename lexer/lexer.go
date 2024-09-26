@@ -1,7 +1,7 @@
 package lexer
 
 import (
-	"github.com/kijimaD/nov/token"
+	"github.com/kijimaD/nova/token"
 )
 
 type Lexer struct {
