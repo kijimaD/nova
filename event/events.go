@@ -25,6 +25,10 @@ const (
 	TaskFinish = TaskStatus("FINISH")
 )
 
+var (
+	messageSpeed = 20 * time.Millisecond
+)
+
 // メッセージ表示
 type MsgEmit struct {
 	// パーサーから渡ってきた表示対象の文字列
@@ -48,25 +52,40 @@ func (e *MsgEmit) Run(q *Queue) {
 
 	for i, char := range e.Body {
 		select {
-		case <-e.DoneChan:
+		case _, ok := <-e.DoneChan:
 			// フラグが立ったら残りの文字を一気に表示
-			q.buf += e.Body[i:]
-			q.wg.Done()
+			if ok {
+				q.buf += e.Body[i:]
+				q.wg.Done()
+			}
+			// FIXME: チェックによってチャンネルの値を消費したが、workerのselect文で必要なので再度通知する...
+			// closeにしたほうがいいのかもしれないが、closeがかぶることがあり、その回避のためコードがわかりにくくなるので、再度通知を送ることにした
+			e.DoneChan <- true
 
 			return
 		default:
 			// フラグが立ってないので1文字ずつ表示
 			q.buf += string(char)
-			time.Sleep(20 * time.Millisecond)
+			time.Sleep(messageSpeed)
 		}
 	}
+	e.DoneChan <- true
 	q.wg.Done()
 
 	return
 }
 
+func isChanOpen(ch chan bool) bool {
+	select {
+	case _, ok := <-ch:
+		return ok // closeしてればfalseになる
+	default:
+		return true // open
+	}
+}
+
 func (e *MsgEmit) Skip() {
-	close(e.DoneChan)
+	e.DoneChan <- true
 }
 
 // ================
@@ -99,7 +118,7 @@ func (c *ChangeBg) Run(q *Queue) {
 type LineEndWait struct{}
 
 func (l *LineEndWait) Run(q *Queue) {
-	q.buf = q.buf + "\n"
+	q.Pop()
 	q.wg.Done()
 	return
 }

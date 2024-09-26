@@ -62,10 +62,25 @@ func TestRun_RunがPopとSkipを使い分ける(t *testing.T) {
 	assert.Equal(t, "last", q.Display())
 }
 
+func TestRun_Skipを使わずに時間経過でも1回のRunで次のイベントに遷移する(t *testing.T) {
+	evaluator := Evaluator{}
+	q := NewQueue(&evaluator)
+	q.Evaluator.Events = append(q.Evaluator.Events, utils.GetPtr(NewMsgEmit("あい")))
+	q.Evaluator.Events = append(q.Evaluator.Events, utils.GetPtr(NewMsgEmit("うえ")))
+	q.Start()
+
+	time.Sleep(50 * time.Millisecond) // アニメーション時間経過
+	assert.Equal(t, "あい", q.Display())
+	q.Run() // pop
+	q.Wait()
+	assert.Equal(t, "あいうえ", q.Display())
+}
+
 func TestJump_複数実行できる(t *testing.T) {
 	input := `*start
 サンプル1
-サンプル2`
+サンプル2[p]
+新文章`
 	l := lexer.NewLexer(input)
 	p := parser.NewParser(l)
 	program, err := p.ParseProgram()
@@ -84,6 +99,9 @@ func TestJump_複数実行できる(t *testing.T) {
 	assert.Equal(t, "サンプル1", q.Display())
 	q.Wait()
 	assert.Equal(t, "サンプル1サンプル2", q.Display())
+	q.Run()
+	q.Wait()
+	assert.Equal(t, "新文章", q.Display())
 }
 
 func TestJump_ラベルジャンプできる(t *testing.T) {

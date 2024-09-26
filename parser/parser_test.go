@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParsingIndexExpressions(t *testing.T) {
+func TestParseIndexExpressions(t *testing.T) {
 	input := `こんにちは[l]世界[p]`
 
 	l := lexer.NewLexer(input)
@@ -103,7 +103,7 @@ func TestParseCmdExpression_シンタックスエラーを捕捉できる(t *tes
 	}
 }
 
-func TestParsingLabelExpression(t *testing.T) {
+func TestParseLabelExpression(t *testing.T) {
 	input := `*example1
 本文1
 本文2
