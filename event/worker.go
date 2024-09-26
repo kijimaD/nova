@@ -73,8 +73,7 @@ func (q *Queue) Run() {
 	case *MsgEmit:
 		select {
 		case _, ok := <-v.DoneChan:
-			if !ok {
-				// チャネルがcloseしている(完了している)ので次へ
+			if ok {
 				q.Pop()
 			}
 		default:

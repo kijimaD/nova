@@ -52,10 +52,15 @@ func (e *MsgEmit) Run(q *Queue) {
 
 	for i, char := range e.Body {
 		select {
-		case <-e.DoneChan:
+		case _, ok := <-e.DoneChan:
 			// フラグが立ったら残りの文字を一気に表示
-			q.buf += e.Body[i:]
-			q.wg.Done()
+			if ok {
+				q.buf += e.Body[i:]
+				q.wg.Done()
+			}
+			// FIXME: チェックによってチャンネルの値を消費したが、workerのselect文で必要なので再度通知する...
+			// closeにしたほうがいいのかもしれないが、closeがかぶることがあり、その回避のためコードがわかりにくくなるので、再度通知を送ることにした
+			e.DoneChan <- true
 
 			return
 		default:
@@ -64,11 +69,7 @@ func (e *MsgEmit) Run(q *Queue) {
 			time.Sleep(messageSpeed)
 		}
 	}
-	// たまにSkipのcloseとかぶってpanicする
-	// 使い方を間違っている感じがする...
-	if isChanOpen(e.DoneChan) {
-		close(e.DoneChan)
-	}
+	e.DoneChan <- true
 	q.wg.Done()
 
 	return
@@ -84,7 +85,7 @@ func isChanOpen(ch chan bool) bool {
 }
 
 func (e *MsgEmit) Skip() {
-	close(e.DoneChan)
+	e.DoneChan <- true
 }
 
 // ================
