@@ -62,6 +62,7 @@ func (e *MsgEmit) Run(q *Queue) {
 			// FIXME: チェックによってチャンネルの値を消費したが、workerのselect文で必要なので再度通知する...
 			// closeにしたほうがいいのかもしれないが、closeがかぶることがあり、その回避のためコードがわかりにくくなるので、再度通知を送ることにした
 			e.DoneChan <- true
+			q.OnAnim = true
 
 			return
 		default:
@@ -70,8 +71,11 @@ func (e *MsgEmit) Run(q *Queue) {
 			time.Sleep(messageSpeed)
 		}
 	}
+
+	// 1文字ずつ表示し終わった場合
 	e.DoneChan <- true
 	q.wg.Done()
+	q.OnAnim = true
 
 	return
 }

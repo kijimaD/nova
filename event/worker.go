@@ -8,17 +8,19 @@ import (
 // queueて名前、おかしいかもしれない
 // 文字列は構造体にしたい
 type Queue struct {
+	// イベントキュー
 	workerChan chan Event
 	// 評価器
 	Evaluator *Evaluator
 	// 現在の表示文字列
 	// アニメーション用に1文字ずつ増えていく
 	buf string
-
 	// 現在実行中
 	cur Event
-
+	// WaitGroup
 	wg sync.WaitGroup
+	// アニメーション待ち状態かどうか
+	OnAnim bool
 }
 
 func NewQueue(evaluator *Evaluator) Queue {
@@ -69,6 +71,7 @@ func (q *Queue) Skip() {
 
 // 実行中タスクに合わせてPop()もしくはSkip()する
 func (q *Queue) Run() {
+	q.OnAnim = false
 	switch v := q.cur.(type) {
 	case *MsgEmit:
 		select {
