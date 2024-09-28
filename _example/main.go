@@ -21,6 +21,8 @@ import (
 	"image"
 	"image/color"
 	"log"
+	"math"
+	"time"
 
 	"golang.org/x/text/language"
 
@@ -50,7 +52,9 @@ var input []byte
 var FS embed.FS
 
 type Game struct {
-	bgImage *ebiten.Image
+	bgImage     *ebiten.Image
+	promptImage *ebiten.Image
+	startTime   time.Time
 }
 
 func (g *Game) Update() error {
@@ -71,17 +75,31 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	{
 		// 背景色
-		black := color.RGBA{0x00, 0x00, 0x00, 0xa0}
+		black := color.RGBA{0x00, 0x00, 0x00, 0x80}
 		vector.DrawFilledRect(screen, 0, 0, screenWidth, screenHeight, black, false)
+	}
+
+	f := &text.GoTextFace{
+		Source:   japaneseFaceSource,
+		Size:     fontSize,
+		Language: language.Japanese,
+	}
+
+	// 待ち状態表示
+	if eventQ.OnAnim {
+		elapsed := time.Since(g.startTime).Seconds()
+		offsetY := 4 * math.Sin(elapsed*4) // sin関数で上下に動かす
+		bounds := g.promptImage.Bounds()
+		bounds.Min.Y = int(20 + offsetY) // 初期位置 + オフセット
+		bounds.Max.Y = bounds.Min.Y + bounds.Dy()
+
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(720-float64(bounds.Max.X*2), 720-float64(bounds.Min.Y*2))
+		screen.DrawImage(g.promptImage, op)
 	}
 
 	{
 		japaneseText := eventQ.Display()
-		f := &text.GoTextFace{
-			Source:   japaneseFaceSource,
-			Size:     fontSize,
-			Language: language.Japanese,
-		}
 		const lineSpacing = fontSize + 4
 		x, y := padding, padding
 		op := &text.DrawOptions{}
@@ -96,6 +114,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 func main() {
+	game := &Game{startTime: time.Now()}
 	{
 		font, err := FS.ReadFile("file/JF-Dot-Kappa20B.ttf")
 		if err != nil {
@@ -119,22 +138,40 @@ func main() {
 	eventQ = event.NewQueue(e)
 	eventQ.Start()
 
-	bs, err := FS.ReadFile("file/forest.jpg")
-	if err != nil {
-		log.Fatal(err)
+	{
+		eimg, err := loadImage("file/forest.jpg")
+		if err != nil {
+			log.Fatal(err)
+		}
+		game.bgImage = eimg
 	}
-	img, _, err := image.Decode(bytes.NewReader(bs))
-	if err != nil {
-		log.Fatal(err)
-	}
-	eImg := ebiten.NewImageFromImage(img)
-	if err != nil {
-		log.Fatal(err)
+	{
+		eimg, err := loadImage("file/prompt.png")
+		if err != nil {
+			log.Fatal(err)
+		}
+		game.promptImage = eimg
 	}
 
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("demo")
-	if err := ebiten.RunGame(&Game{bgImage: eImg}); err != nil {
+	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func loadImage(filename string) (*ebiten.Image, error) {
+	bs, err := FS.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	dec, _, err := image.Decode(bytes.NewReader(bs))
+	if err != nil {
+		return nil, err
+	}
+	img := ebiten.NewImageFromImage(dec)
+	if err != nil {
+		return nil, err
+	}
+	return img, nil
 }
