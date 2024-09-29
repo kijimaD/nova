@@ -12,19 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// func TestPop(t *testing.T) {
-// 	q := Queue{}
-// 	q.events = append(q.events, &flush{})
-// 	q.events = append(q.events, &notImplement{})
-// 	q.events = append(q.events, &flush{})
-// 	q.events = append(q.events, &notImplement{})
-
-// 	assert.Equal(t, &flush{}, q.Pop())
-// 	assert.Equal(t, &notImplement{}, q.Pop())
-// 	assert.Equal(t, &flush{}, q.Pop())
-// 	assert.Equal(t, &notImplement{}, q.Pop())
-// }
-
 func TestMsgEmit_Skipできる(t *testing.T) {
 	evaluator := Evaluator{}
 	q := NewQueue(&evaluator)
@@ -151,56 +138,31 @@ func TestWorker_startラベルから開始する(t *testing.T) {
 	assert.Equal(t, "スタート", q.Display())
 }
 
-// func TestWait(t *testing.T) {
-// 	q := Queue{}
-// 	q.Events = append(q.Events, &msgEmit{
-// 		body: []rune("東京"),
-// 	})
-// 	q.Events = append(q.Events, &flush{})
-// 	q.Events = append(q.Events, &msgEmit{
-// 		body: []rune("京都"),
-// 	})
-// }
+func TestReset_リセットできる(t *testing.T) {
+	input := `*start
+start
+[p]
+[jump target="example"]
+*example
+example
+[p]`
+	l := lexer.NewLexer(input)
+	p := parser.NewParser(l)
+	program, err := p.ParseProgram()
+	assert.NoError(t, err)
+	e := NewEvaluator()
+	e.Eval(program)
+	q := NewQueue(e)
+	q.Start()
 
-// func TestBuilder(t *testing.T) {
-// 	input := `こんにちは...[p]
-// 今日はいかがですか`
-// 	l := NewLexer(input)
-// 	p := NewParser(l)
-// 	program := p.ParseProgram()
-// 	e := Evaluator{}
-// 	e.Eval(program)
-
-// 	q := NewQueue(e.Events)
-// 	assert.Equal(t, "今日はいかがですか", q.buf)
-// }
-
-// // 改行を自動挿入できる
-// func TestNewLine(t *testing.T) {
-// 	input := `こんにちは[p]
-// ああああああああああああああああああああ`
-// 	l := NewLexer(input)
-// 	p := NewParser(l)
-// 	program := p.ParseProgram()
-// 	e := Evaluator{}
-// 	e.Eval(program)
-
-// 	q := NewQueue(e.Events)
-// 	assert.Equal(t, "ああああああああああああああ\nあああああ", q.buf)
-// }
-
-// // 意図的な改行で自動改行カウントをリセットする
-// func TestNewLineResetCount(t *testing.T) {
-// 	input := `こんにちは[p]
-// ああああああああああ
-// ああああああああああ`
-// 	l := NewLexer(input)
-// 	p := NewParser(l)
-// 	program := p.ParseProgram()
-// 	e := Evaluator{}
-// 	e.Eval(program)
-
-// 	q := NewQueue(e.Events)
-// 	assert.Equal(t, "こんにちは", q.buf)
-// 	assert.Equal(t, "ああああああああああ\nああああああああああ", q.buf)
-// }
+	q.Run()
+	q.Wait()
+	assert.Equal(t, "start", q.Display())
+	q.Run()
+	q.Wait()
+	assert.Equal(t, "example", q.Display())
+	q.Reset()
+	assert.Equal(t, "", q.Display())
+	q.Wait()
+	assert.Equal(t, "start", q.Display())
+}

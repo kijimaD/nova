@@ -62,6 +62,16 @@ func (q *Queue) Pop() Event {
 	return e
 }
 
+// デバッグ用
+func (q *Queue) Reset() {
+	q.Wait()
+	q.buf = ""
+	q.Evaluator.Play("start") // 各イベントのチャンネルがcloseしているので初期化する
+	q.Pop()                   // 次イベントの先頭を読み込み
+
+	return
+}
+
 // 現在処理中のタスクをスキップする
 func (q *Queue) Skip() {
 	if e, ok := q.cur.(Skipper); ok {
