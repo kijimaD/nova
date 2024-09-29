@@ -2,6 +2,7 @@ package event
 
 import (
 	"log"
+	"math"
 	"sync"
 )
 
@@ -15,7 +16,7 @@ type Queue struct {
 	// 現在の表示文字列
 	// アニメーション用に1文字ずつ増えていく
 	buf string
-	// 現在実行中
+	// 実行中イベント
 	cur Event
 	// WaitGroup
 	wg sync.WaitGroup
@@ -51,15 +52,24 @@ func (q *Queue) Start() {
 	q.Pop()
 }
 
-// 未処理キューの先頭を取り出して処理キューに入れる
+// 処理中インデックスを進める
 func (q *Queue) Pop() Event {
-	e := q.Events()[0]
+	e := q.Events()[q.Evaluator.CurrentIdx]
 	q.cur = e
 	q.wg.Add(1)
 	q.workerChan <- e
-	q.Evaluator.Events = append(q.Events()[:0], q.Events()[1:]...)
-
+	q.Evaluator.CurrentIdx = int(math.Min(float64(len(q.Events())-1), float64(q.Evaluator.CurrentIdx+1)))
 	return e
+}
+
+// デバッグ用
+func (q *Queue) Reset() {
+	q.Wait()
+	q.buf = ""
+	q.Evaluator.Play("start") // 各イベントのチャンネルがcloseしているので初期化する
+	q.Pop()                   // 次イベントの先頭を読み込み
+
+	return
 }
 
 // 現在処理中のタスクをスキップする

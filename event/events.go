@@ -60,7 +60,7 @@ func (e *MsgEmit) Run(q *Queue) {
 				q.wg.Done()
 			}
 			// FIXME: チェックによってチャンネルの値を消費したが、workerのselect文で必要なので再度通知する...
-			// closeにしたほうがいいのかもしれないが、closeがかぶることがあり、その回避のためコードがわかりにくくなるので、再度通知を送ることにした
+			// closeしたほうがいいのかもしれないが、closeがかぶることがあり、その回避のためコードがわかりにくくなるので、再度通知を送ることにした
 			e.DoneChan <- true
 			q.OnAnim = true
 
