@@ -1,7 +1,6 @@
 package event
 
 import (
-	"log"
 	"math"
 	"sync"
 )
@@ -9,11 +8,16 @@ import (
 // queueて名前、おかしいかもしれない
 // 文字列は構造体にしたい
 type Queue struct {
-	// イベントキュー
-	workerChan chan Event
 	// 評価器
 	Evaluator *Evaluator
-	// 現在の表示文字列
+	// 内部で利用するイベントキュー
+	// すべてのイベントが入る可能性がある
+	workerChan chan Event
+	// クライアント側での実装が必要なイベントを通知するキュー
+	// テキスト関係のイベントはbufに変換され、入らない
+	NotifyChan chan Event
+	// 現在表示中の文字列
+	// 利用側はこの文字列を表示するだけで、いい感じに表示できる
 	// アニメーション用に1文字ずつ増えていく
 	buf string
 	// 実行中イベント
@@ -28,6 +32,7 @@ func NewQueue(evaluator *Evaluator) Queue {
 	q := Queue{
 		Evaluator:  evaluator,
 		workerChan: make(chan Event, 1024),
+		NotifyChan: make(chan Event, 1024),
 	}
 
 	return q
@@ -80,6 +85,7 @@ func (q *Queue) Skip() {
 }
 
 // 実行中タスクに合わせてPop()もしくはSkip()する
+// 入力待ちにならないイベント(画像表示とか)は、イベント実行時に自身でPop()するため、この分岐にはこない
 func (q *Queue) Run() {
 	q.OnAnim = false
 	switch v := q.cur.(type) {
@@ -93,8 +99,6 @@ func (q *Queue) Run() {
 			// チャネルがクローズされているわけでもなく、値もまだ来ていない
 			q.Skip()
 		}
-	default:
-		log.Printf("想定してないイベントタイプ: %s", v)
 	}
 }
 

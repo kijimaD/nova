@@ -115,18 +115,6 @@ func (c *Flush) Run(q *Queue) {
 
 // ================
 
-type ChangeBg struct {
-	Source string
-}
-
-func (c *ChangeBg) Run(q *Queue) {
-	q.Pop()
-	q.wg.Done()
-	return
-}
-
-// ================
-
 // 行末クリック待ち
 type LineEndWait struct{}
 
@@ -139,6 +127,20 @@ func (l *LineEndWait) Run(q *Queue) {
 
 // ================
 
+// 背景変更待ち
+type ChangeBg struct {
+	Source string
+}
+
+func (c *ChangeBg) Run(q *Queue) {
+	q.Pop()
+	q.wg.Done()
+	q.NotifyChan <- c
+	return
+}
+
+// ================
+
 // 秒数待ち
 type Wait struct {
 	DurationMsec time.Duration
@@ -146,7 +148,7 @@ type Wait struct {
 
 func (w *Wait) Run(q *Queue) {
 	time.Sleep(w.DurationMsec)
-	q.buf = ""
+	q.Pop()
 	q.wg.Done()
 	return
 }

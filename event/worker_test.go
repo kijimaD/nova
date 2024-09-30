@@ -166,3 +166,32 @@ example
 	q.Wait()
 	assert.Equal(t, "start", q.Display())
 }
+
+func TestImage_背景変更を通知する(t *testing.T) {
+	input := `*start
+[image source="test.png"]
+スタート
+[p]
+ああああ
+[p]`
+	l := lexer.NewLexer(input)
+	p := parser.NewParser(l)
+	program, err := p.ParseProgram()
+	assert.NoError(t, err)
+	e := NewEvaluator()
+	e.Eval(program)
+	q := NewQueue(e)
+	q.Start()
+
+	assert.Equal(t, "", q.Display())
+	q.Run() // pop
+	q.Wait()
+
+	receivedEvent := <-q.NotifyChan
+	assert.Equal(t, &ChangeBg{Source: "test.png"}, receivedEvent)
+
+	assert.Equal(t, "スタート", q.Display())
+	q.Run() // pop
+	q.Wait()
+	assert.Equal(t, "ああああ", q.Display())
+}
