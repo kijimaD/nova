@@ -2,6 +2,7 @@ package event
 
 import (
 	"log"
+	"strings"
 	"time"
 )
 
@@ -49,7 +50,6 @@ func (e *MsgEmit) Run(q *Queue) {
 	if e.DoneChan == nil {
 		log.Fatal("doneChan is nil")
 	}
-	e.Body = autoNewline(e.Body, 24)
 
 	for i, char := range e.Body {
 		select {
@@ -57,6 +57,7 @@ func (e *MsgEmit) Run(q *Queue) {
 			// フラグが立ったら残りの文字を一気に表示
 			if ok {
 				q.buf += e.Body[i:]
+				q.buf = autoNewline(q.buf, 24)
 				q.wg.Done()
 			}
 			// FIXME: チェックによってチャンネルの値を消費したが、workerのselect文で必要なので再度通知する...
@@ -68,32 +69,43 @@ func (e *MsgEmit) Run(q *Queue) {
 		default:
 			// フラグが立ってないので1文字ずつ表示
 			q.buf += string(char)
+			q.buf = autoNewline(q.buf, 24)
 			time.Sleep(messageSpeed)
 		}
 	}
 
 	// 1文字ずつ表示し終わった場合
 	e.DoneChan <- true
-	q.wg.Done()
 	q.OnAnim = true
+	q.wg.Done()
 
 	return
 }
 
-func autoNewline(message string, chunkSize int) string {
-	runes := []rune(message) // Unicode の文字列処理に対応
-	var result string
+// 直近の行を見て、横幅を超えていたら改行
+func autoNewline(buf string, chunkSize int) string {
+	split := strings.Split(buf, "\n")
+	last := split[len(split)-1]
 
-	for i := 0; i < len(runes); i += chunkSize {
-		end := i + chunkSize
-		if end > len(runes) {
-			end = len(runes)
-		}
-		result += string(runes[i:end])
-		if end < len(runes) {
-			result += "\n"
+	var latestLine strings.Builder
+	runes := []rune(last)
+	for i, r := range runes {
+		latestLine.WriteRune(r)
+		// 文末の場合は改行を追加しない
+		if (i+1)%chunkSize == 0 && i+1 != len(runes) {
+			latestLine.WriteString("\n")
 		}
 	}
+
+	var result string
+	if len(split) > 1 {
+		// 加工した末尾以外は元に戻す
+		original := strings.Join(split[0:len(split)-1], "\n")
+		result = original + "\n" + latestLine.String()
+	} else {
+		result = latestLine.String()
+	}
+
 	return result
 }
 
