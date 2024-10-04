@@ -2,6 +2,7 @@ package event
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/kijimaD/nova/ast"
@@ -83,6 +84,16 @@ func (e *Evaluator) Play(label string) {
 	e.CurrentIdx = 0
 	e.Events = []Event{} // 初期化
 	e.Eval(block)
+}
+
+func (e *Evaluator) Labels() []string {
+	keys := []string{}
+	for k, _ := range e.LabelMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	return keys
 }
 
 func (e *Evaluator) evalProgram(program *ast.Program) Event {

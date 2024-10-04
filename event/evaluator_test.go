@@ -82,3 +82,53 @@ aiueo
 		assert.Equal(t, expect, results)
 	}
 }
+
+func TestList(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  string
+		expect []string
+	}{
+		{
+			name: "取得できる",
+			input: `*start
+start
+*ch1
+ch1
+*ch2
+ch2
+`,
+			expect: []string{"ch1", "ch2", "start"},
+		},
+		{
+			name: "ソートして取得する",
+			input: `*ch2
+ch2
+*ch1
+ch1
+*start
+start
+`,
+			expect: []string{"ch1", "ch2", "start"},
+		},
+		{
+			name:   "空文字の場合は空スライスを返す",
+			input:  ``,
+			expect: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := lexer.NewLexer(tt.input)
+			p := parser.NewParser(l)
+			program, err := p.ParseProgram()
+			assert.NoError(t, err)
+			e := NewEvaluator()
+			e.Eval(program)
+			result := e.Labels()
+
+			assert.Equal(t, tt.expect, result)
+		})
+	}
+}
