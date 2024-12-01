@@ -14,6 +14,7 @@ type Evaluator struct {
 	CurrentIdx int
 	LabelMap   map[string]*ast.BlockStatement
 	errors     []error
+	CurrentLabel    string
 }
 
 func NewEvaluator() *Evaluator {
@@ -76,6 +77,7 @@ func (e *Evaluator) Eval(node ast.Node) Event {
 
 // 指定ラベルの内容でEventsを更新する
 func (e *Evaluator) Play(label string) {
+	e.CurrentLabel = label
 	block, ok := e.LabelMap[label]
 	if !ok {
 		e.errors = append(e.errors, fmt.Errorf("指定ラベルが存在しない %s", label))
