@@ -10,19 +10,19 @@ import (
 )
 
 type Evaluator struct {
-	Events     []Event
-	CurrentIdx int
-	LabelMap   map[string]*ast.BlockStatement
-	errors     []error
+	Events          []Event
+	CurrentEventIdx int
+	LabelMap        map[string]*ast.BlockStatement
 	CurrentLabel    string
+	errors          []error
 }
 
 func NewEvaluator() *Evaluator {
 	e := Evaluator{
-		Events:     []Event{},
-		CurrentIdx: 0,
-		LabelMap:   make(map[string]*ast.BlockStatement),
-		errors:     []error{},
+		Events:          []Event{},
+		CurrentEventIdx: 0,
+		LabelMap:        make(map[string]*ast.BlockStatement),
+		errors:          []error{},
 	}
 
 	return &e
@@ -83,7 +83,7 @@ func (e *Evaluator) Play(label string) {
 		e.errors = append(e.errors, fmt.Errorf("指定ラベルが存在しない %s", label))
 		return
 	}
-	e.CurrentIdx = 0
+	e.CurrentEventIdx = 0
 	e.Events = []Event{} // 初期化
 	e.Eval(block)
 }

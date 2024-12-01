@@ -59,11 +59,11 @@ func (q *Queue) Start() {
 
 // 処理中インデックスを進める
 func (q *Queue) Pop() Event {
-	e := q.Events()[q.Evaluator.CurrentIdx]
+	e := q.Events()[q.Evaluator.CurrentEventIdx]
 	q.cur = e
 	q.wg.Add(1)
 	q.workerChan <- e
-	q.Evaluator.CurrentIdx = int(math.Min(float64(len(q.Events())-1), float64(q.Evaluator.CurrentIdx+1)))
+	q.Evaluator.CurrentEventIdx = int(math.Min(float64(len(q.Events())-1), float64(q.Evaluator.CurrentEventIdx+1)))
 	return e
 }
 
