@@ -2,7 +2,6 @@ package event
 
 import (
 	"fmt"
-	"sort"
 	"time"
 
 	"github.com/kijimaD/nova/ast"
@@ -12,16 +11,35 @@ import (
 type Evaluator struct {
 	Events          []Event
 	CurrentEventIdx int
-	LabelMap        map[string]*ast.BlockStatement
+	LabelMaster     LabelMaster
 	CurrentLabel    string
 	errors          []error
+}
+
+type LabelMaster struct {
+	Labels     []Label
+	LabelIndex map[string]int
+}
+
+func (master *LabelMaster) GetLabel(key string) (Label, error) {
+	idx := master.LabelIndex[key]
+	if idx < 0 || len(master.Labels)-1 < idx {
+		return Label{}, fmt.Errorf("keyが存在しない")
+	}
+
+	return master.Labels[idx], nil
+}
+
+type Label struct {
+	Name string
+	Body *ast.BlockStatement
 }
 
 func NewEvaluator() *Evaluator {
 	e := Evaluator{
 		Events:          []Event{},
 		CurrentEventIdx: 0,
-		LabelMap:        make(map[string]*ast.BlockStatement),
+		LabelMaster:     LabelMaster{Labels: []Label{}, LabelIndex: map[string]int{}},
 		errors:          []error{},
 	}
 
@@ -64,7 +82,16 @@ func (e *Evaluator) Eval(node ast.Node) Event {
 		e.Events = append(e.Events, m)
 		return m
 	case *ast.LabelLiteral:
-		e.LabelMap[node.LabelName.String()] = node.Body
+		label := Label{
+			Name: node.LabelName.String(),
+			Body: node.Body,
+		}
+		_, exists := e.LabelMaster.LabelIndex[label.Name]
+		if !exists {
+			e.LabelMaster.Labels = append(e.LabelMaster.Labels, label)
+			e.LabelMaster.LabelIndex[label.Name] = len(e.LabelMaster.Labels) - 1
+		}
+
 		return e.Eval(node.Body)
 	case nil:
 	default:
@@ -76,26 +103,28 @@ func (e *Evaluator) Eval(node ast.Node) Event {
 }
 
 // 指定ラベルの内容でEventsを更新する
-func (e *Evaluator) Play(label string) {
-	e.CurrentLabel = label
-	block, ok := e.LabelMap[label]
-	if !ok {
+func (e *Evaluator) Play(key string) {
+	e.CurrentLabel = key
+	e.CurrentEventIdx = 0
+
+	label, err := e.LabelMaster.GetLabel(key)
+	if err != nil {
 		e.errors = append(e.errors, fmt.Errorf("指定ラベルが存在しない %s", label))
+
 		return
 	}
-	e.CurrentEventIdx = 0
+
 	e.Events = []Event{} // 初期化
-	e.Eval(block)
+	e.Eval(label.Body)
 }
 
 func (e *Evaluator) Labels() []string {
-	keys := []string{}
-	for k, _ := range e.LabelMap {
-		keys = append(keys, k)
+	names := []string{}
+	for _, label := range e.LabelMaster.Labels {
+		names = append(names, label.Name)
 	}
-	sort.Strings(keys)
 
-	return keys
+	return names
 }
 
 func (e *Evaluator) evalProgram(program *ast.Program) Event {

@@ -98,10 +98,10 @@ ch1
 *ch2
 ch2
 `,
-			expect: []string{"ch1", "ch2", "start"},
+			expect: []string{"start", "ch1", "ch2"},
 		},
 		{
-			name: "ソートして取得する",
+			name: "定義順に取得する",
 			input: `*ch2
 ch2
 *ch1
@@ -109,12 +109,23 @@ ch1
 *start
 start
 `,
-			expect: []string{"ch1", "ch2", "start"},
+			expect: []string{"ch2", "ch1", "start"},
 		},
 		{
 			name:   "空文字の場合は空スライスを返す",
 			input:  ``,
 			expect: []string{},
+		},
+		{
+			name: "重複していた場合は1つにまとめられる",
+			input: `*ch1
+xxx
+*ch1
+xxx
+*ch1
+xxx
+`,
+			expect: []string{"ch1"},
 		},
 	}
 
@@ -129,6 +140,7 @@ start
 			result := e.Labels()
 
 			assert.Equal(t, tt.expect, result)
+			assert.Equal(t, 0, len(e.errors))
 		})
 	}
 }
