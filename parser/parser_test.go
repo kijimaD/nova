@@ -109,7 +109,9 @@ func TestParseLabelExpression(t *testing.T) {
 本文2
 *example2
 本文3
-本文4`
+本文4
+*こんにちは
+本文5`
 
 	l := lexer.NewLexer(input)
 	p := NewParser(l)
@@ -160,6 +162,19 @@ func TestParseLabelExpression(t *testing.T) {
 			es, ok := f.Body.Statements[2].(*ast.ExpressionStatement)
 			assert.True(t, ok)
 			assert.Equal(t, "本文4", es.Token.Literal)
+		}
+	}
+	{
+		stmt, ok := program.Statements[2].(*ast.ExpressionStatement)
+		assert.True(t, ok)
+		f, ok := stmt.Expression.(*ast.LabelLiteral)
+		assert.True(t, ok)
+		assert.Equal(t, "こんにちは", f.LabelName.Value)
+
+		{
+			es, ok := f.Body.Statements[0].(*ast.ExpressionStatement)
+			assert.True(t, ok)
+			assert.Equal(t, "本文5", es.Token.Literal)
 		}
 	}
 }
