@@ -2,6 +2,7 @@ package ast
 
 import (
 	"bytes"
+	"sort"
 	"strings"
 
 	"github.com/kijimaD/nova/token"
@@ -108,7 +109,10 @@ func (fl *CmdLiteral) String() string {
 
 	out.WriteString("[")
 	out.WriteString(fl.FuncName.Value)
-	out.WriteString(strings.Join(params, ", "))
+	if len(params) > 0 {
+		out.WriteString(" ")
+		out.WriteString(strings.Join(params, ", "))
+	}
 	out.WriteString("]")
 
 	return out.String()
@@ -131,11 +135,18 @@ func (n *NamedParams) expressionNode() {}
 func (n *NamedParams) String() string {
 	var out bytes.Buffer
 
-	for k, v := range n.Map {
+	keys := []string{}
+	for k, _ := range n.Map {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		v := n.Map[k]
 		out.WriteString(k)
 		out.WriteString(" = ")
 		out.WriteString(v)
 	}
+
 	return out.String()
 }
 
