@@ -25,10 +25,10 @@ const (
 
 	CMD_FLUSH         = "p"
 	CMD_LINE_END_WAIT = "l"
+	CMD_NEWLINE       = "r"
 	CMD_IMAGE         = "image"
 	CMD_WAIT          = "wait"
 	CMD_JUMP          = "jump"
-	CMD_NEWLINE       = "r"
 )
 
 // 予約語

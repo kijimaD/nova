@@ -195,3 +195,36 @@ func TestImage_背景変更を通知する(t *testing.T) {
 	q.Wait()
 	assert.Equal(t, "ああああ", q.Display())
 }
+
+// TODO: 一発で流れてほしい
+func TestNewline_改行できる(t *testing.T) {
+	input := `*start
+あ[r]
+い[r]
+う[r]
+え[r]
+お[r]
+[l]
+かきくけこ
+[p]`
+	l := lexer.NewLexer(input)
+	p := parser.NewParser(l)
+	program, err := p.ParseProgram()
+	assert.NoError(t, err)
+	e := NewEvaluator()
+	e.Eval(program)
+	q := NewQueue(e)
+	q.Start()
+
+	q.Run()
+	q.Wait()
+	q.Run()
+	q.Wait()
+	q.Run()
+	q.Wait()
+	q.Run()
+	q.Wait()
+	q.Run()
+	q.Wait()
+	assert.Equal(t, "あ\nい\nう\nえ\nお", q.Display())
+}

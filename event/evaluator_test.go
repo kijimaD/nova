@@ -44,6 +44,8 @@ aiueo
 				results = append(results, fmt.Sprintf("changeBg source=%s", event.Source))
 			case *Wait:
 				results = append(results, fmt.Sprintf("wait time=%s", event.DurationMsec))
+			case *Newline:
+				results = append(results, "newline")
 			default:
 				t.Errorf("未処理のイベントが指定された: %#v", event)
 			}
@@ -54,7 +56,9 @@ aiueo
 			"世界",
 			"flush",
 			"12345",
+			"newline",
 			"aiueo",
+			"newline",
 			"changeBg source=test.png",
 			"wait time=100ms",
 		}

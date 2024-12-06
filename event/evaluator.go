@@ -74,6 +74,8 @@ func (e *Evaluator) Eval(node ast.Node) Event {
 			eve = &Wait{DurationMsec: duration}
 		case token.CMD_JUMP:
 			eve = &Jump{Target: node.Parameters.Map["target"]}
+		case token.CMD_NEWLINE:
+			eve = &Newline{}
 		}
 		e.Events = append(e.Events, eve)
 		return eve

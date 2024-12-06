@@ -179,6 +179,17 @@ func (j *Jump) Run(q *Queue) {
 	return
 }
 
+type Newline struct{}
+
+
+func (n *Newline) Run(q *Queue) {
+	q.buf += "\n"
+	q.Pop()
+	q.wg.Done()
+
+	return
+}
+
 // ================
 
 // 未実装
