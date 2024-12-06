@@ -51,6 +51,7 @@ func TestParseProgram(t *testing.T) {
 
 func TestParseCmdExpression(t *testing.T) {
 	input := `[example a="value1" b="value2" c="test.png"]
+hello, world[r]
 hello, world
 `
 
@@ -70,7 +71,7 @@ hello, world
 	assert.Equal(t, "value2", f.Parameters.Map["b"])
 	assert.Equal(t, "test.png", f.Parameters.Map["c"])
 
-	assert.Equal(t, "[example a=value1, b=value2, c=test.png]hello, world", program.String())
+	assert.Equal(t, "[example a=value1, b=value2, c=test.png]hello, world[r]hello, world", program.String())
 }
 
 func TestParseCmdExpression_シンタックスエラーを捕捉できる(t *testing.T) {

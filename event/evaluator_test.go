@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO: テストで中身の処理を書きすぎているのを直す
 func TestEval(t *testing.T) {
 	input := `*start
 こんにちは[l]世界[p]
@@ -44,7 +45,7 @@ aiueo
 			case *Wait:
 				results = append(results, fmt.Sprintf("wait time=%s", event.DurationMsec))
 			default:
-				t.Errorf("未処理のイベントが指定された: %v", event)
+				t.Errorf("未処理のイベントが指定された: %#v", event)
 			}
 		}
 		expect := []string{
