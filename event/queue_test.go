@@ -32,6 +32,44 @@ func TestMsgEmit_Skipできる(t *testing.T) {
 	assert.Equal(t, "last", q.Display())
 }
 
+func TestMsgEmit_流れる(t *testing.T) {
+	t.Skip()
+	input := `*start
+あ
+い
+う
+え
+お`
+	l := lexer.NewLexer(input)
+	p := parser.NewParser(l)
+	program, err := p.ParseProgram()
+	assert.NoError(t, err)
+	e := NewEvaluator()
+	e.Eval(program)
+	q := NewQueue(e)
+	q.Start()
+
+	q.Run()
+	q.Wait()
+	assert.Equal(t, "あいうえお", q.Display())
+}
+
+func TestMsgEmit_イベントを消費する(t *testing.T) {
+	t.Skip()
+	evaluator := Evaluator{}
+	q := NewQueue(&evaluator)
+	q.Evaluator.Events = append(q.Evaluator.Events,
+		utils.GetPtr(NewMsgEmit("あい")),
+		utils.GetPtr(NewMsgEmit("うえ")),
+		utils.GetPtr(NewMsgEmit("おか")),
+	)
+	q.Start()
+
+	q.Run()
+	q.Wait()
+	assert.Equal(t, "あいうえおか", q.Display())
+}
+
 func TestRun_RunがPopとSkipを使い分ける(t *testing.T) {
 	evaluator := Evaluator{}
 	q := NewQueue(&evaluator)
