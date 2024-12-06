@@ -1,6 +1,7 @@
 package event
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 // 別packageに移したいが、ここで参照があるためできない
 type Event interface {
 	Run(*Queue)
+	String() string
 }
 
 type Skipper interface {
@@ -43,6 +45,10 @@ func NewMsgEmit(body string) MsgEmit {
 		Body:     body,
 		DoneChan: make(chan bool, 1),
 	}
+}
+
+func (e *MsgEmit) String() string {
+	return fmt.Sprintf("<MsgEmit %s>", e.Body)
 }
 
 func (e *MsgEmit) Run(q *Queue) {
@@ -118,6 +124,10 @@ func (e *MsgEmit) Skip() {
 // ページをフラッシュする
 type Flush struct{}
 
+func (c *Flush) String() string {
+	return "<Flush>"
+}
+
 func (c *Flush) Run(q *Queue) {
 	q.buf = ""
 	q.Pop()
@@ -129,6 +139,10 @@ func (c *Flush) Run(q *Queue) {
 
 // 行末クリック待ち
 type LineEndWait struct{}
+
+func (l *LineEndWait) String() string {
+	return "<LineEndWait>"
+}
 
 func (l *LineEndWait) Run(q *Queue) {
 	q.buf += "\n"
@@ -142,6 +156,10 @@ func (l *LineEndWait) Run(q *Queue) {
 // 背景変更待ち
 type ChangeBg struct {
 	Source string
+}
+
+func (c *ChangeBg) String() string {
+	return fmt.Sprintf("<ChangeBg %s>", c.Source)
 }
 
 func (c *ChangeBg) Run(q *Queue) {
@@ -158,6 +176,10 @@ type Wait struct {
 	DurationMsec time.Duration
 }
 
+func (w *Wait) String() string {
+	return fmt.Sprintf("<Wait %s>", w.DurationMsec)
+}
+
 func (w *Wait) Run(q *Queue) {
 	time.Sleep(w.DurationMsec)
 	q.Pop()
@@ -172,6 +194,10 @@ type Jump struct {
 	Target string
 }
 
+func (j *Jump) String() string {
+	return fmt.Sprintf("<Jump %s>", j.Target)
+}
+
 func (j *Jump) Run(q *Queue) {
 	q.Evaluator.Play(j.Target)
 	q.Pop() // 次イベントの先頭を読み込み
@@ -181,6 +207,9 @@ func (j *Jump) Run(q *Queue) {
 
 type Newline struct{}
 
+func (n *Newline) String() string {
+	return "<Newline>"
+}
 
 func (n *Newline) Run(q *Queue) {
 	q.buf += "\n"
@@ -194,6 +223,10 @@ func (n *Newline) Run(q *Queue) {
 
 // 未実装
 type NotImplement struct{}
+
+func (l *NotImplement) String() string {
+	return "NotImplement"
+}
 
 func (l *NotImplement) Run(q *Queue) {
 	q.wg.Done()

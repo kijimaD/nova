@@ -14,8 +14,8 @@ import (
 func TestEval(t *testing.T) {
 	input := `*start
 こんにちは[l]世界[p]
-12345
-aiueo
+12345[r]
+aiueo[r]
 [image source="test.png"]
 [wait time="100"]
 *example1
@@ -86,6 +86,32 @@ aiueo
 		}
 		assert.Equal(t, expect, results)
 	}
+}
+
+func TestEval_変換できる(t *testing.T) {
+	input := `*start
+hello
+world
+`
+
+	l := lexer.NewLexer(input)
+	p := parser.NewParser(l)
+	program, err := p.ParseProgram()
+	assert.NoError(t, err)
+
+	e := NewEvaluator()
+	e.Eval(program)
+	e.Play("start")
+
+	var estr string
+	for _, e := range e.Events {
+		estr += fmt.Sprintf("%s\n", e.String())
+	}
+
+	expect := `<MsgEmit hello>
+<MsgEmit world>
+`
+	assert.Equal(t, expect, estr)
 }
 
 func TestList(t *testing.T) {

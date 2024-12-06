@@ -64,7 +64,15 @@ func (q *Queue) Pop() Event {
 	q.wg.Add(1)
 	q.workerChan <- e
 	q.Evaluator.CurrentEventIdx = int(math.Min(float64(len(q.Events())-1), float64(q.Evaluator.CurrentEventIdx+1)))
+
 	return e
+}
+
+// 現在処理中のタスクをスキップする
+func (q *Queue) Skip() {
+	if e, ok := q.cur.(Skipper); ok {
+		e.Skip()
+	}
 }
 
 // デバッグ用
@@ -75,13 +83,6 @@ func (q *Queue) Reset() {
 	q.Pop()                   // 次イベントの先頭を読み込み
 
 	return
-}
-
-// 現在処理中のタスクをスキップする
-func (q *Queue) Skip() {
-	if e, ok := q.cur.(Skipper); ok {
-		e.Skip()
-	}
 }
 
 // 実行中タスクに合わせてPop()もしくはSkip()する
