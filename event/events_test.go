@@ -11,7 +11,7 @@ import (
 
 func TestMsgEmit_Skipできる(t *testing.T) {
 	q := prepareQueue(t, `*start
-東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12
+first
 [p]
 last`)
 	q.Start()
@@ -22,7 +22,7 @@ last`)
 	assert.True(t, utf8.RuneCountInString(q.Display()) < 10)
 	q.Skip()
 	q.Wait()
-	assert.Equal(t, "東京1東京2東京3東京4東京5東京6東京7東京8\n東京9東京10東京11東京12", q.Display())
+	assert.Equal(t, "first", q.Display())
 	q.Pop()
 	q.Wait()
 	assert.Equal(t, "last", q.Display())

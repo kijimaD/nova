@@ -152,7 +152,7 @@ func main() {
 	eventQ.Start()
 
 	{
-		eimg, err := loadImage("file/forest.jpg")
+		eimg, err := loadImage("file/black.png")
 		if err != nil {
 			log.Fatal(err)
 		}
