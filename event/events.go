@@ -41,6 +41,8 @@ func (e *MsgEmit) String() string {
 	return fmt.Sprintf("<MsgEmit %s>", e.Body)
 }
 
+// 表示中か表示終了かで2通りの状態がある
+// 表示終了したら完了チャンネルにフラグを送る
 func (e *MsgEmit) Run(q *Queue) {
 	for i, char := range e.Body {
 		select {
@@ -115,8 +117,7 @@ func (c *Flush) String() string {
 
 func (c *Flush) Run(q *Queue) {
 	q.buf = ""
-	q.Pop()
-	q.wg.Done()
+
 	return
 }
 
@@ -131,8 +132,7 @@ func (l *LineEndWait) String() string {
 
 func (l *LineEndWait) Run(q *Queue) {
 	q.buf += "\n"
-	q.Pop()
-	q.wg.Done()
+
 	return
 }
 
@@ -148,9 +148,8 @@ func (c *ChangeBg) String() string {
 }
 
 func (c *ChangeBg) Run(q *Queue) {
-	q.Pop()
-	q.wg.Done()
 	q.NotifyChan <- c
+
 	return
 }
 
@@ -167,8 +166,7 @@ func (w *Wait) String() string {
 
 func (w *Wait) Run(q *Queue) {
 	time.Sleep(w.DurationMsec)
-	q.Pop()
-	q.wg.Done()
+
 	return
 }
 
@@ -185,8 +183,7 @@ func (j *Jump) String() string {
 
 func (j *Jump) Run(q *Queue) {
 	q.Play(j.Target)
-	q.Pop() // 次イベントの先頭を読み込み
-	q.wg.Done()
+
 	return
 }
 
@@ -198,8 +195,6 @@ func (n *Newline) String() string {
 
 func (n *Newline) Run(q *Queue) {
 	q.buf += "\n"
-	q.Pop()
-	q.wg.Done()
 
 	return
 }
@@ -214,6 +209,5 @@ func (l *NotImplement) String() string {
 }
 
 func (l *NotImplement) Run(q *Queue) {
-	q.wg.Done()
 	return
 }

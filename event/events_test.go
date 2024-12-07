@@ -141,7 +141,7 @@ func TestImage_背景変更を通知する(t *testing.T) {
 
 // TODO: 一発で流れてほしい
 func TestNewline_改行できる(t *testing.T) {
-	t.Skip()
+	t.Skip("未実装")
 
 	q := prepareQueue(t, `*start
 あ[r]

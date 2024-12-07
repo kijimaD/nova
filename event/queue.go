@@ -52,6 +52,12 @@ func (q *Queue) Start() {
 			select {
 			case event := <-q.workerChan:
 				event.Run(q)
+				_, ok := event.(Skipper)
+				if !ok {
+					// ブロックしないイベントは進める
+					q.Pop()
+					q.wg.Done()
+				}
 			}
 		}
 	}()
@@ -92,7 +98,7 @@ func (q *Queue) Skip() {
 }
 
 // 実行中タスクに合わせてPop()もしくはSkip()する
-// 入力待ちにならないイベント(画像表示とか)は、イベント実行時に自身でPop()するため、この分岐にはこない
+// 入力待ちにならないイベントでは、Runを呼び出さない。直接Popを呼び出す
 func (q *Queue) Run() {
 	q.OnAnim = false
 	switch v := q.cur.(type) {
