@@ -74,6 +74,21 @@ hello, world
 	assert.Equal(t, "[example a=value1, b=value2, c=test.png]hello, world[r]hello, world", program.String())
 }
 
+func TestParseText(t *testing.T) {
+	input := `hello, world1
+hello, world2
+[p]
+hello, world3
+`
+
+	l := lexer.NewLexer(input)
+	p := NewParser(l)
+	program, err := p.ParseProgram()
+	assert.NoError(t, err)
+
+	assert.Equal(t, "hello, world1hello, world2[p]hello, world3", program.String())
+}
+
 func TestParseCmdExpression_シンタックスエラーを捕捉できる(t *testing.T) {
 	{
 		input := `[example a]`
