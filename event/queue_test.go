@@ -33,7 +33,7 @@ func TestMsgEmit_Skipできる(t *testing.T) {
 }
 
 func TestMsgEmit_流れる(t *testing.T) {
-	t.Skip()
+	t.Skip("未実装")
 	input := `*start
 あ
 い
@@ -55,7 +55,7 @@ func TestMsgEmit_流れる(t *testing.T) {
 }
 
 func TestMsgEmit_イベントを消費する(t *testing.T) {
-	t.Skip()
+	t.Skip("未実装")
 	evaluator := Evaluator{}
 	q := NewQueue(&evaluator)
 	q.Evaluator.Events = append(q.Evaluator.Events,

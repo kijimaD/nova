@@ -199,7 +199,7 @@ func (j *Jump) String() string {
 }
 
 func (j *Jump) Run(q *Queue) {
-	q.Evaluator.Play(j.Target)
+	q.Play(j.Target)
 	q.Pop() // 次イベントの先頭を読み込み
 	q.wg.Done()
 	return

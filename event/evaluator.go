@@ -8,14 +8,18 @@ import (
 	"github.com/kijimaD/nova/token"
 )
 
+// 評価器。ASTをイベント列に変換する
+// 最初にファイル全体のASTを入れてEvalすることで、ラベルASTをマスタにセットする
+// その後はマスタからラベル位置のASTをEvalすることで、任意のラベル位置のイベント列を得られる
 type Evaluator struct {
-	Events          []Event
-	CurrentEventIdx int
-	LabelMaster     LabelMaster
-	CurrentLabel    string
-	errors          []error
+	// 現在保持しているイベント
+	Events []Event
+	// シナリオファイルのASTをラベルごとに格納したマスタ
+	LabelMaster LabelMaster
+	errors      []error
 }
 
+// スライスで保存しつつ、キーで引ける
 type LabelMaster struct {
 	Labels     []Label
 	LabelIndex map[string]int
@@ -37,10 +41,9 @@ type Label struct {
 
 func NewEvaluator() *Evaluator {
 	e := Evaluator{
-		Events:          []Event{},
-		CurrentEventIdx: 0,
-		LabelMaster:     LabelMaster{Labels: []Label{}, LabelIndex: map[string]int{}},
-		errors:          []error{},
+		Events:      []Event{},
+		LabelMaster: LabelMaster{Labels: []Label{}, LabelIndex: map[string]int{}},
+		errors:      []error{},
 	}
 
 	return &e
@@ -106,9 +109,6 @@ func (e *Evaluator) Eval(node ast.Node) Event {
 
 // 指定ラベルの内容でEventsを更新する
 func (e *Evaluator) Play(key string) {
-	e.CurrentLabel = key
-	e.CurrentEventIdx = 0
-
 	label, err := e.LabelMaster.GetLabel(key)
 	if err != nil {
 		e.errors = append(e.errors, fmt.Errorf("指定ラベルが存在しない %s", label))
