@@ -41,16 +41,18 @@ func (e *MsgEmit) String() string {
 	return fmt.Sprintf("<MsgEmit %s>", e.Body)
 }
 
-// 表示中か表示終了かで2通りの状態がある
+// 文字送り中か文字表示完了かの2通りの状態がある
 // 表示終了したら完了チャンネルにフラグを送る
 func (e *MsgEmit) Run(q *Queue) {
+	lineLen := 24
+
 	for i, char := range e.Body {
 		select {
 		case _, ok := <-e.DoneChan:
 			// フラグが立ったら残りの文字を一気に表示
 			if ok {
 				q.buf += e.Body[i:]
-				q.buf = autoNewline(q.buf, 24)
+				q.buf = autoNewline(q.buf, lineLen)
 				q.wg.Done()
 			}
 			// FIXME: チェックによってチャンネルの値を消費したが、workerのselect文で必要なので再度通知する...
@@ -62,7 +64,7 @@ func (e *MsgEmit) Run(q *Queue) {
 		default:
 			// フラグが立ってないので1文字ずつ表示
 			q.buf += string(char)
-			q.buf = autoNewline(q.buf, 24)
+			q.buf = autoNewline(q.buf, lineLen)
 			time.Sleep(messageSpeed)
 		}
 	}
