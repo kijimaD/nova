@@ -176,35 +176,6 @@ func TestWorker_startラベルから開始する(t *testing.T) {
 	assert.Equal(t, "スタート", q.Display())
 }
 
-func TestReset_リセットできる(t *testing.T) {
-	input := `*start
-start
-[p]
-[jump target="example"]
-*example
-example
-[p]`
-	l := lexer.NewLexer(input)
-	p := parser.NewParser(l)
-	program, err := p.ParseProgram()
-	assert.NoError(t, err)
-	e := NewEvaluator()
-	e.Eval(program)
-	q := NewQueue(e)
-	q.Start()
-
-	q.Run()
-	q.Wait()
-	assert.Equal(t, "start", q.Display())
-	q.Run()
-	q.Wait()
-	assert.Equal(t, "example", q.Display())
-	q.Reset()
-	assert.Equal(t, "", q.Display())
-	q.Wait()
-	assert.Equal(t, "start", q.Display())
-}
-
 func TestImage_背景変更を通知する(t *testing.T) {
 	input := `*start
 [image source="test.png"]

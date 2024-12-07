@@ -75,16 +75,6 @@ func (q *Queue) Skip() {
 	}
 }
 
-// デバッグ用
-func (q *Queue) Reset() {
-	q.Wait()
-	q.buf = ""
-	q.Evaluator.Play("start") // 各イベントのチャンネルがcloseしているので初期化する
-	q.Pop()                   // 次イベントの先頭を読み込み
-
-	return
-}
-
 // 実行中タスクに合わせてPop()もしくはSkip()する
 // 入力待ちにならないイベント(画像表示とか)は、イベント実行時に自身でPop()するため、この分岐にはこない
 func (q *Queue) Run() {

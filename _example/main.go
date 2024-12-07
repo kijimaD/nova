@@ -62,10 +62,6 @@ func (g *Game) Update() error {
 		eventQ.Run()
 	}
 
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
-		eventQ.Reset()
-	}
-
 	select {
 	case v := <-eventQ.NotifyChan:
 		switch event := v.(type) {
