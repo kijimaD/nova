@@ -19,26 +19,6 @@ type Evaluator struct {
 	errors      []error
 }
 
-// スライスで保存しつつ、キーで引ける
-type LabelMaster struct {
-	Labels     []Label
-	LabelIndex map[string]int
-}
-
-func (master *LabelMaster) GetLabel(key string) (Label, error) {
-	idx := master.LabelIndex[key]
-	if idx < 0 || len(master.Labels)-1 < idx {
-		return Label{}, fmt.Errorf("keyが存在しない")
-	}
-
-	return master.Labels[idx], nil
-}
-
-type Label struct {
-	Name string
-	Body *ast.BlockStatement
-}
-
 func NewEvaluator() *Evaluator {
 	e := Evaluator{
 		Events:      []Event{},
@@ -91,11 +71,7 @@ func (e *Evaluator) Eval(node ast.Node) Event {
 			Name: node.LabelName.String(),
 			Body: node.Body,
 		}
-		_, exists := e.LabelMaster.LabelIndex[label.Name]
-		if !exists {
-			e.LabelMaster.Labels = append(e.LabelMaster.Labels, label)
-			e.LabelMaster.LabelIndex[label.Name] = len(e.LabelMaster.Labels) - 1
-		}
+		e.LabelMaster.AddLabel(label)
 
 		return e.Eval(node.Body)
 	case nil:
@@ -108,16 +84,16 @@ func (e *Evaluator) Eval(node ast.Node) Event {
 }
 
 // 指定ラベルの内容でEventsを更新する
-func (e *Evaluator) Play(key string) {
+func (e *Evaluator) Play(key string) error {
 	label, err := e.LabelMaster.GetLabel(key)
 	if err != nil {
-		e.errors = append(e.errors, fmt.Errorf("指定ラベルが存在しない %s", label))
-
-		return
+		return fmt.Errorf(`指定ラベルが存在しない "%s"`, key)
 	}
 
 	e.Events = []Event{} // 初期化
 	e.Eval(label.Body)
+
+	return nil
 }
 
 func (e *Evaluator) Labels() []string {

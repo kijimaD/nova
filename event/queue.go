@@ -1,6 +1,7 @@
 package event
 
 import (
+	"log"
 	"math"
 	"sync"
 )
@@ -29,6 +30,8 @@ type Queue struct {
 
 	CurrentEventIdx int
 	CurrentLabel    string
+
+	EventQueue []Event
 }
 
 func NewQueue(evaluator *Evaluator) Queue {
@@ -41,13 +44,12 @@ func NewQueue(evaluator *Evaluator) Queue {
 	return q
 }
 
-func (q *Queue) Events() []Event {
-	return q.Evaluator.Events
-}
-
-// ワーカーを開始する
+// 処理待受を開始する
 func (q *Queue) Start() {
-	q.Evaluator.Play("start") // startラベルで開始する
+	err := q.Play("start") // startラベルで開始する
+	if err != nil {
+		log.Fatal(err)
+	}
 	go func() {
 		for {
 			select {
@@ -60,25 +62,35 @@ func (q *Queue) Start() {
 	q.Pop()
 }
 
-func (q *Queue) Play(label string) {
+func (q *Queue) Play(label string) error {
 	q.CurrentEventIdx = 0
 	q.CurrentLabel = label
-	q.Evaluator.Play(label)
+	err := q.Evaluator.Play(label)
+	if err != nil {
+		return err
+	}
+
+	newQueue := make([]Event, len(q.Evaluator.Events))
+	copy(newQueue, q.Evaluator.Events)
+	q.EventQueue = newQueue
+
+	return nil
 }
 
 // 処理中インデックスを進める
 // FIXME: 現在のイベントをチャンネルに入れて、インデックスをインクリメントする、というようになっている...
+// TODO: ここで次のクリック待ちにあたるまで入れ続ければよいと思う
 func (q *Queue) Pop() Event {
-	e := q.Events()[q.CurrentEventIdx]
+	e := q.EventQueue[q.CurrentEventIdx]
 	q.cur = e
 	q.wg.Add(1)
 	q.workerChan <- e
-	q.CurrentEventIdx = int(math.Min(float64(len(q.Events())-1), float64(q.CurrentEventIdx+1)))
+	q.CurrentEventIdx = int(math.Min(float64(len(q.EventQueue)-1), float64(q.CurrentEventIdx+1)))
 
 	return e
 }
 
-// 現在処理中のタスクをスキップする
+// 現在処理中の、スキップ可能なタスクをスキップする
 func (q *Queue) Skip() {
 	if e, ok := q.cur.(Skipper); ok {
 		e.Skip()

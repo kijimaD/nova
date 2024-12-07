@@ -5,19 +5,32 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/kijimaD/nova/lexer"
-	"github.com/kijimaD/nova/parser"
 	"github.com/kijimaD/nova/utils"
 
 	"github.com/stretchr/testify/assert"
 )
 
+func TestPlay_指定ラベルを読み込める(t *testing.T) {
+	q := prepareQueue(t, `*start
+xxx`)
+	err := q.Play("start")
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(q.EventQueue))
+}
+
+func TestPlay_指定ラベルが存在しないとエラーを返す(t *testing.T) {
+	q := prepareQueue(t, `*start
+xxx`)
+	err := q.Play("not exists")
+	assert.Error(t, err)
+	assert.Equal(t, 0, len(q.EventQueue))
+}
+
 func TestMsgEmit_Skipできる(t *testing.T) {
-	evaluator := Evaluator{}
-	q := NewQueue(&evaluator)
-	q.Evaluator.Events = append(q.Evaluator.Events, utils.GetPtr(NewMsgEmit("東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12")))
-	q.Evaluator.Events = append(q.Evaluator.Events, &Flush{})
-	q.Evaluator.Events = append(q.Evaluator.Events, utils.GetPtr(NewMsgEmit("last")))
+	q := prepareQueue(t, `*start
+東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12
+[p]
+last`)
 	q.Start()
 
 	assert.Equal(t, "", q.Display())
@@ -30,28 +43,6 @@ func TestMsgEmit_Skipできる(t *testing.T) {
 	q.Pop()
 	q.Wait()
 	assert.Equal(t, "last", q.Display())
-}
-
-func TestMsgEmit_流れる(t *testing.T) {
-	t.Skip("未実装")
-	input := `*start
-あ
-い
-う
-え
-お`
-	l := lexer.NewLexer(input)
-	p := parser.NewParser(l)
-	program, err := p.ParseProgram()
-	assert.NoError(t, err)
-	e := NewEvaluator()
-	e.Eval(program)
-	q := NewQueue(e)
-	q.Start()
-
-	q.Run()
-	q.Wait()
-	assert.Equal(t, "あいうえお", q.Display())
 }
 
 func TestMsgEmit_イベントを消費する(t *testing.T) {
@@ -71,11 +62,11 @@ func TestMsgEmit_イベントを消費する(t *testing.T) {
 }
 
 func TestRun_RunがPopとSkipを使い分ける(t *testing.T) {
-	evaluator := Evaluator{}
-	q := NewQueue(&evaluator)
-	q.Evaluator.Events = append(q.Evaluator.Events, utils.GetPtr(NewMsgEmit("東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12")))
-	q.Evaluator.Events = append(q.Evaluator.Events, &Flush{})
-	q.Evaluator.Events = append(q.Evaluator.Events, utils.GetPtr(NewMsgEmit("last")))
+	q := prepareQueue(t, `*start
+東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12
+[p]
+last
+`)
 	q.Start()
 
 	assert.Equal(t, "", q.Display())
@@ -88,10 +79,9 @@ func TestRun_RunがPopとSkipを使い分ける(t *testing.T) {
 }
 
 func TestRun_Skipを使わずに時間経過でも1回のRunで次のイベントに遷移する(t *testing.T) {
-	evaluator := Evaluator{}
-	q := NewQueue(&evaluator)
-	q.Evaluator.Events = append(q.Evaluator.Events, utils.GetPtr(NewMsgEmit("あい")))
-	q.Evaluator.Events = append(q.Evaluator.Events, utils.GetPtr(NewMsgEmit("うえ")))
+	q := prepareQueue(t, `*start
+あい
+うえ`)
 	q.Start()
 
 	time.Sleep(50 * time.Millisecond) // アニメーション時間経過
@@ -102,17 +92,10 @@ func TestRun_Skipを使わずに時間経過でも1回のRunで次のイベン�
 }
 
 func TestJump_複数実行できる(t *testing.T) {
-	input := `*start
+	q := prepareQueue(t, `*start
 サンプル1
 サンプル2[p]
-新文章`
-	l := lexer.NewLexer(input)
-	p := parser.NewParser(l)
-	program, err := p.ParseProgram()
-	assert.NoError(t, err)
-	e := NewEvaluator()
-	e.Eval(program)
-	q := NewQueue(e)
+新文章`)
 	q.Start()
 
 	assert.Equal(t, "", q.Display())
@@ -130,20 +113,13 @@ func TestJump_複数実行できる(t *testing.T) {
 }
 
 func TestJump_ラベルジャンプできる(t *testing.T) {
-	input := `*start
+	q := prepareQueue(t, `*start
 スタート[p]
 [jump target="sample"]
 *ignore
 これは無視
 *sample
-サンプル1`
-	l := lexer.NewLexer(input)
-	p := parser.NewParser(l)
-	program, err := p.ParseProgram()
-	assert.NoError(t, err)
-	e := NewEvaluator()
-	e.Eval(program)
-	q := NewQueue(e)
+サンプル1`)
 	q.Start()
 
 	assert.Equal(t, "", q.Display())
@@ -158,17 +134,10 @@ func TestJump_ラベルジャンプできる(t *testing.T) {
 }
 
 func TestWorker_startラベルから開始する(t *testing.T) {
-	input := `*ignore
+	q := prepareQueue(t, `*ignore
 無視するべき
 *start
-スタート`
-	l := lexer.NewLexer(input)
-	p := parser.NewParser(l)
-	program, err := p.ParseProgram()
-	assert.NoError(t, err)
-	e := NewEvaluator()
-	e.Eval(program)
-	q := NewQueue(e)
+スタート`)
 	q.Start()
 
 	q.Run()
@@ -177,19 +146,12 @@ func TestWorker_startラベルから開始する(t *testing.T) {
 }
 
 func TestImage_背景変更を通知する(t *testing.T) {
-	input := `*start
+	q := prepareQueue(t, `*start
 [image source="test.png"]
 スタート
 [p]
 ああああ
-[p]`
-	l := lexer.NewLexer(input)
-	p := parser.NewParser(l)
-	program, err := p.ParseProgram()
-	assert.NoError(t, err)
-	e := NewEvaluator()
-	e.Eval(program)
-	q := NewQueue(e)
+[p]`)
 	q.Start()
 
 	assert.Equal(t, "", q.Display())
@@ -207,7 +169,7 @@ func TestImage_背景変更を通知する(t *testing.T) {
 
 // TODO: 一発で流れてほしい
 func TestNewline_改行できる(t *testing.T) {
-	input := `*start
+	q := prepareQueue(t, `*start
 あ[r]
 い[r]
 う[r]
@@ -215,14 +177,7 @@ func TestNewline_改行できる(t *testing.T) {
 お[r]
 [l]
 かきくけこ
-[p]`
-	l := lexer.NewLexer(input)
-	p := parser.NewParser(l)
-	program, err := p.ParseProgram()
-	assert.NoError(t, err)
-	e := NewEvaluator()
-	e.Eval(program)
-	q := NewQueue(e)
+[p]`)
 	q.Start()
 
 	q.Run()
