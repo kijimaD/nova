@@ -52,11 +52,16 @@ func (q *Queue) Start() {
 			select {
 			case event := <-q.workerChan:
 				event.Run(q)
-				_, ok := event.(Skipper)
-				if !ok {
+
+				_, isSkipper := event.(Skipper)
+				if !isSkipper {
 					// ブロックしないイベントは進める
-					q.Pop()
 					q.wg.Done()
+
+					_, isWait := event.(*LineEndWait)
+					if !isWait {
+						q.Pop()
+					}
 				}
 			}
 		}
@@ -80,14 +85,17 @@ func (q *Queue) Play(label string) error {
 }
 
 // 処理中インデックスを進める
-// FIXME: イベントの先頭をチャンネルに入れて、イベントの先頭を切る、というようになっている
-// 名前から想像する挙動は、切り出してからイベントに入れる、である
+// イベント列の先頭をチャンネルに入れて、現在処理中とする。そして処理したイベント列の先頭を切る
+// 名前から想像する挙動は、切り出してからイベントに入れる、であるが...
 func (q *Queue) Pop() {
-	q.cur = q.EventQueue[0]
-	q.wg.Add(1)
-	q.workerChan <- q.cur
+	if len(q.EventQueue) > 0 {
+		q.cur = q.EventQueue[0]
+		q.wg.Wait()
+		q.wg.Add(1)
+		q.workerChan <- q.cur
 
-	q.EventQueue = q.EventQueue[1:]
+		q.EventQueue = q.EventQueue[1:]
+	}
 }
 
 // 現在処理中の、スキップ可能なタスクをスキップする
@@ -97,21 +105,25 @@ func (q *Queue) Skip() {
 	}
 }
 
+// クリックを押したときに実行される想定
 // 実行中タスクに合わせてPop()もしくはSkip()する
-// 入力待ちにならないイベントでは、Runを呼び出さない。直接Popを呼び出す
+// 非ブロックのイベントでは、自動でPopするのでこの関数を通過しない
 func (q *Queue) Run() {
 	q.OnAnim = false
 	switch v := q.cur.(type) {
 	case *MsgEmit:
 		select {
 		case _, ok := <-v.DoneChan:
-			if ok {
+			// close
+			if !ok {
 				q.Pop()
 			}
 		default:
 			// チャネルがクローズされているわけでもなく、値もまだ来ていない
 			q.Skip()
 		}
+	case *LineEndWait:
+		q.Pop()
 	}
 }
 

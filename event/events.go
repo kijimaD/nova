@@ -50,14 +50,13 @@ func (e *MsgEmit) Run(q *Queue) {
 		select {
 		case _, ok := <-e.DoneChan:
 			// フラグが立ったら残りの文字を一気に表示
-			if ok {
-				q.buf += e.Body[i:]
-				q.buf = autoNewline(q.buf, lineLen)
-				q.wg.Done()
+			if !ok {
+				continue
 			}
-			// FIXME: チェックによってチャンネルの値を消費したが、workerのselect文で必要なので再度通知する...
-			// closeしたほうがいいのかもしれないが、closeがかぶることがあり、その回避のためコードがわかりにくくなるので、再度通知を送ることにした
-			e.DoneChan <- true
+			q.buf += e.Body[i:]
+			q.buf = autoNewline(q.buf, lineLen)
+			q.wg.Done()
+			close(e.DoneChan)
 			q.OnAnim = true
 
 			return
@@ -73,6 +72,8 @@ func (e *MsgEmit) Run(q *Queue) {
 	e.DoneChan <- true
 	q.OnAnim = true
 	q.wg.Done()
+
+	q.Pop()
 
 	return
 }
