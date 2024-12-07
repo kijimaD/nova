@@ -144,11 +144,7 @@ func TestNewline_改行できる(t *testing.T) {
 	t.Skip("未実装")
 
 	q := prepareQueue(t, `*start
-あ[r]
-い[r]
-う[r]
-え[r]
-お[r]`)
+あ[r]い[r]う[r]え[r]お[r]`)
 	q.Start()
 
 	q.Run()
