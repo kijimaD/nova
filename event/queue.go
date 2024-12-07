@@ -2,7 +2,6 @@ package event
 
 import (
 	"log"
-	"math"
 	"sync"
 )
 
@@ -28,10 +27,8 @@ type Queue struct {
 	// アニメーション待ち状態かどうか
 	OnAnim bool
 
-	CurrentEventIdx int
-	CurrentLabel    string
-
-	EventQueue []Event
+	CurrentLabel string
+	EventQueue   []Event
 }
 
 func NewQueue(evaluator *Evaluator) Queue {
@@ -63,7 +60,6 @@ func (q *Queue) Start() {
 }
 
 func (q *Queue) Play(label string) error {
-	q.CurrentEventIdx = 0
 	q.CurrentLabel = label
 	err := q.Evaluator.Play(label)
 	if err != nil {
@@ -78,16 +74,14 @@ func (q *Queue) Play(label string) error {
 }
 
 // 処理中インデックスを進める
-// FIXME: 現在のイベントをチャンネルに入れて、インデックスをインクリメントする、というようになっている...
-// TODO: ここで次のクリック待ちにあたるまで入れ続ければよいと思う
-func (q *Queue) Pop() Event {
-	e := q.EventQueue[q.CurrentEventIdx]
-	q.cur = e
+// FIXME: イベントの先頭をチャンネルに入れて、イベントの先頭を切る、というようになっている
+// 名前から想像する挙動は、切り出してからイベントに入れる、である
+func (q *Queue) Pop() {
+	q.cur = q.EventQueue[0]
 	q.wg.Add(1)
-	q.workerChan <- e
-	q.CurrentEventIdx = int(math.Min(float64(len(q.EventQueue)-1), float64(q.CurrentEventIdx+1)))
+	q.workerChan <- q.cur
 
-	return e
+	q.EventQueue = q.EventQueue[1:]
 }
 
 // 現在処理中の、スキップ可能なタスクをスキップする
