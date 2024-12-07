@@ -67,6 +67,7 @@ func (q *Queue) Play(label string) {
 }
 
 // 処理中インデックスを進める
+// FIXME: 現在のイベントをチャンネルに入れて、インデックスをインクリメントする、というようになっている...
 func (q *Queue) Pop() Event {
 	e := q.Events()[q.CurrentEventIdx]
 	q.cur = e

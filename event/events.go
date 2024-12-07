@@ -2,31 +2,21 @@ package event
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 )
 
-// 別packageに移したいが、ここで参照があるためできない
 type Event interface {
 	Run(*Queue)
 	String() string
 }
 
+// アニメーション状態を持ち、スキップ可能なイベント
 type Skipper interface {
 	Skip()
 }
 
 // ================
-
-type TaskStatus string
-
-const (
-	// 表示アニメーション中
-	TaskRunning = TaskStatus("RUNNING")
-	// メッセージをすべて表示した
-	TaskFinish = TaskStatus("FINISH")
-)
 
 var (
 	messageSpeed = 20 * time.Millisecond
@@ -52,11 +42,6 @@ func (e *MsgEmit) String() string {
 }
 
 func (e *MsgEmit) Run(q *Queue) {
-	// 初期化漏れ対策
-	if e.DoneChan == nil {
-		log.Fatal("doneChan is nil")
-	}
-
 	for i, char := range e.Body {
 		select {
 		case _, ok := <-e.DoneChan:
