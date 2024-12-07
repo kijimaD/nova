@@ -1,7 +1,7 @@
 package event
 
 import (
-	"math"
+	"log"
 	"sync"
 )
 
@@ -26,6 +26,9 @@ type Queue struct {
 	wg sync.WaitGroup
 	// アニメーション待ち状態かどうか
 	OnAnim bool
+
+	CurrentLabel string
+	EventQueue   []Event
 }
 
 func NewQueue(evaluator *Evaluator) Queue {
@@ -38,18 +41,23 @@ func NewQueue(evaluator *Evaluator) Queue {
 	return q
 }
 
-func (q *Queue) Events() []Event {
-	return q.Evaluator.Events
-}
-
-// ワーカーを開始する
+// 処理待受を開始する
 func (q *Queue) Start() {
-	q.Evaluator.Play("start") // startラベルで開始する
+	err := q.Play("start") // startラベルで開始する
+	if err != nil {
+		log.Fatal(err)
+	}
 	go func() {
 		for {
 			select {
 			case event := <-q.workerChan:
 				event.Run(q)
+				_, ok := event.(Skipper)
+				if !ok {
+					// ブロックしないイベントは進める
+					q.Pop()
+					q.wg.Done()
+				}
 			}
 		}
 	}()
@@ -57,27 +65,32 @@ func (q *Queue) Start() {
 	q.Pop()
 }
 
+func (q *Queue) Play(label string) error {
+	q.CurrentLabel = label
+	err := q.Evaluator.Play(label)
+	if err != nil {
+		return err
+	}
+
+	newQueue := make([]Event, len(q.Evaluator.Events))
+	copy(newQueue, q.Evaluator.Events)
+	q.EventQueue = newQueue
+
+	return nil
+}
+
 // 処理中インデックスを進める
-func (q *Queue) Pop() Event {
-	e := q.Events()[q.Evaluator.CurrentEventIdx]
-	q.cur = e
+// FIXME: イベントの先頭をチャンネルに入れて、イベントの先頭を切る、というようになっている
+// 名前から想像する挙動は、切り出してからイベントに入れる、である
+func (q *Queue) Pop() {
+	q.cur = q.EventQueue[0]
 	q.wg.Add(1)
-	q.workerChan <- e
-	q.Evaluator.CurrentEventIdx = int(math.Min(float64(len(q.Events())-1), float64(q.Evaluator.CurrentEventIdx+1)))
-	return e
+	q.workerChan <- q.cur
+
+	q.EventQueue = q.EventQueue[1:]
 }
 
-// デバッグ用
-func (q *Queue) Reset() {
-	q.Wait()
-	q.buf = ""
-	q.Evaluator.Play("start") // 各イベントのチャンネルがcloseしているので初期化する
-	q.Pop()                   // 次イベントの先頭を読み込み
-
-	return
-}
-
-// 現在処理中のタスクをスキップする
+// 現在処理中の、スキップ可能なタスクをスキップする
 func (q *Queue) Skip() {
 	if e, ok := q.cur.(Skipper); ok {
 		e.Skip()
@@ -85,7 +98,7 @@ func (q *Queue) Skip() {
 }
 
 // 実行中タスクに合わせてPop()もしくはSkip()する
-// 入力待ちにならないイベント(画像表示とか)は、イベント実行時に自身でPop()するため、この分岐にはこない
+// 入力待ちにならないイベントでは、Runを呼び出さない。直接Popを呼び出す
 func (q *Queue) Run() {
 	q.OnAnim = false
 	switch v := q.cur.(type) {

@@ -8,39 +8,22 @@ import (
 	"github.com/kijimaD/nova/token"
 )
 
+// 評価器。ASTをイベント列に変換する
+// 最初にファイル全体のASTを入れてEvalすることで、ラベルASTをマスタにセットする
+// その後はマスタからラベル位置のASTをEvalすることで、任意のラベル位置のイベント列を得られる
 type Evaluator struct {
-	Events          []Event
-	CurrentEventIdx int
-	LabelMaster     LabelMaster
-	CurrentLabel    string
-	errors          []error
-}
-
-type LabelMaster struct {
-	Labels     []Label
-	LabelIndex map[string]int
-}
-
-func (master *LabelMaster) GetLabel(key string) (Label, error) {
-	idx := master.LabelIndex[key]
-	if idx < 0 || len(master.Labels)-1 < idx {
-		return Label{}, fmt.Errorf("keyが存在しない")
-	}
-
-	return master.Labels[idx], nil
-}
-
-type Label struct {
-	Name string
-	Body *ast.BlockStatement
+	// 現在保持しているイベント
+	Events []Event
+	// シナリオファイルのASTをラベルごとに格納したマスタ
+	LabelMaster LabelMaster
+	errors      []error
 }
 
 func NewEvaluator() *Evaluator {
 	e := Evaluator{
-		Events:          []Event{},
-		CurrentEventIdx: 0,
-		LabelMaster:     LabelMaster{Labels: []Label{}, LabelIndex: map[string]int{}},
-		errors:          []error{},
+		Events:      []Event{},
+		LabelMaster: LabelMaster{Labels: []Label{}, LabelIndex: map[string]int{}},
+		errors:      []error{},
 	}
 
 	return &e
@@ -74,6 +57,8 @@ func (e *Evaluator) Eval(node ast.Node) Event {
 			eve = &Wait{DurationMsec: duration}
 		case token.CMD_JUMP:
 			eve = &Jump{Target: node.Parameters.Map["target"]}
+		case token.CMD_NEWLINE:
+			eve = &Newline{}
 		}
 		e.Events = append(e.Events, eve)
 		return eve
@@ -86,11 +71,7 @@ func (e *Evaluator) Eval(node ast.Node) Event {
 			Name: node.LabelName.String(),
 			Body: node.Body,
 		}
-		_, exists := e.LabelMaster.LabelIndex[label.Name]
-		if !exists {
-			e.LabelMaster.Labels = append(e.LabelMaster.Labels, label)
-			e.LabelMaster.LabelIndex[label.Name] = len(e.LabelMaster.Labels) - 1
-		}
+		e.LabelMaster.AddLabel(label)
 
 		return e.Eval(node.Body)
 	case nil:
@@ -103,19 +84,16 @@ func (e *Evaluator) Eval(node ast.Node) Event {
 }
 
 // 指定ラベルの内容でEventsを更新する
-func (e *Evaluator) Play(key string) {
-	e.CurrentLabel = key
-	e.CurrentEventIdx = 0
-
+func (e *Evaluator) Play(key string) error {
 	label, err := e.LabelMaster.GetLabel(key)
 	if err != nil {
-		e.errors = append(e.errors, fmt.Errorf("指定ラベルが存在しない %s", label))
-
-		return
+		return fmt.Errorf(`指定ラベルが存在しない "%s"`, key)
 	}
 
 	e.Events = []Event{} // 初期化
 	e.Eval(label.Body)
+
+	return nil
 }
 
 func (e *Evaluator) Labels() []string {

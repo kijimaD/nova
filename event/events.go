@@ -1,30 +1,22 @@
 package event
 
 import (
-	"log"
+	"fmt"
 	"strings"
 	"time"
 )
 
-// 別packageに移したいが、ここで参照があるためできない
 type Event interface {
 	Run(*Queue)
+	String() string
 }
 
+// アニメーション状態を持ち、スキップ可能なイベント
 type Skipper interface {
 	Skip()
 }
 
 // ================
-
-type TaskStatus string
-
-const (
-	// 表示アニメーション中
-	TaskRunning = TaskStatus("RUNNING")
-	// メッセージをすべて表示した
-	TaskFinish = TaskStatus("FINISH")
-)
 
 var (
 	messageSpeed = 20 * time.Millisecond
@@ -45,12 +37,13 @@ func NewMsgEmit(body string) MsgEmit {
 	}
 }
 
-func (e *MsgEmit) Run(q *Queue) {
-	// 初期化漏れ対策
-	if e.DoneChan == nil {
-		log.Fatal("doneChan is nil")
-	}
+func (e *MsgEmit) String() string {
+	return fmt.Sprintf("<MsgEmit %s>", e.Body)
+}
 
+// 表示中か表示終了かで2通りの状態がある
+// 表示終了したら完了チャンネルにフラグを送る
+func (e *MsgEmit) Run(q *Queue) {
 	for i, char := range e.Body {
 		select {
 		case _, ok := <-e.DoneChan:
@@ -118,10 +111,13 @@ func (e *MsgEmit) Skip() {
 // ページをフラッシュする
 type Flush struct{}
 
+func (c *Flush) String() string {
+	return "<Flush>"
+}
+
 func (c *Flush) Run(q *Queue) {
 	q.buf = ""
-	q.Pop()
-	q.wg.Done()
+
 	return
 }
 
@@ -130,10 +126,13 @@ func (c *Flush) Run(q *Queue) {
 // 行末クリック待ち
 type LineEndWait struct{}
 
+func (l *LineEndWait) String() string {
+	return "<LineEndWait>"
+}
+
 func (l *LineEndWait) Run(q *Queue) {
 	q.buf += "\n"
-	q.Pop()
-	q.wg.Done()
+
 	return
 }
 
@@ -144,10 +143,13 @@ type ChangeBg struct {
 	Source string
 }
 
+func (c *ChangeBg) String() string {
+	return fmt.Sprintf("<ChangeBg %s>", c.Source)
+}
+
 func (c *ChangeBg) Run(q *Queue) {
-	q.Pop()
-	q.wg.Done()
 	q.NotifyChan <- c
+
 	return
 }
 
@@ -158,10 +160,13 @@ type Wait struct {
 	DurationMsec time.Duration
 }
 
+func (w *Wait) String() string {
+	return fmt.Sprintf("<Wait %s>", w.DurationMsec)
+}
+
 func (w *Wait) Run(q *Queue) {
 	time.Sleep(w.DurationMsec)
-	q.Pop()
-	q.wg.Done()
+
 	return
 }
 
@@ -172,10 +177,25 @@ type Jump struct {
 	Target string
 }
 
+func (j *Jump) String() string {
+	return fmt.Sprintf("<Jump %s>", j.Target)
+}
+
 func (j *Jump) Run(q *Queue) {
-	q.Evaluator.Play(j.Target)
-	q.Pop() // 次イベントの先頭を読み込み
-	q.wg.Done()
+	q.Play(j.Target)
+
+	return
+}
+
+type Newline struct{}
+
+func (n *Newline) String() string {
+	return "<Newline>"
+}
+
+func (n *Newline) Run(q *Queue) {
+	q.buf += "\n"
+
 	return
 }
 
@@ -184,7 +204,10 @@ func (j *Jump) Run(q *Queue) {
 // 未実装
 type NotImplement struct{}
 
+func (l *NotImplement) String() string {
+	return "NotImplement"
+}
+
 func (l *NotImplement) Run(q *Queue) {
-	q.wg.Done()
 	return
 }

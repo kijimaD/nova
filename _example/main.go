@@ -62,10 +62,6 @@ func (g *Game) Update() error {
 		eventQ.Run()
 	}
 
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
-		eventQ.Reset()
-	}
-
 	select {
 	case v := <-eventQ.NotifyChan:
 		switch event := v.(type) {
@@ -156,7 +152,7 @@ func main() {
 	eventQ.Start()
 
 	{
-		eimg, err := loadImage("file/forest.jpg")
+		eimg, err := loadImage("file/black.png")
 		if err != nil {
 			log.Fatal(err)
 		}

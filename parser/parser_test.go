@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseIndexExpressions(t *testing.T) {
+func TestParseProgram(t *testing.T) {
 	input := `こんにちは[l]世界[p]`
 
 	l := lexer.NewLexer(input)
@@ -45,10 +45,15 @@ func TestParseIndexExpressions(t *testing.T) {
 		assert.True(t, ok)
 		assert.Equal(t, "[p]", cmdExp.String())
 	}
+
+	assert.Equal(t, "こんにちは[l]世界[p]", program.String())
 }
 
 func TestParseCmdExpression(t *testing.T) {
-	input := `[example a="value1" b="value2" c="test.png"]`
+	input := `[example a="value1" b="value2" c="test.png"]
+hello, world[r]
+hello, world
+`
 
 	l := lexer.NewLexer(input)
 	p := NewParser(l)
@@ -65,6 +70,23 @@ func TestParseCmdExpression(t *testing.T) {
 	assert.Equal(t, "value1", f.Parameters.Map["a"])
 	assert.Equal(t, "value2", f.Parameters.Map["b"])
 	assert.Equal(t, "test.png", f.Parameters.Map["c"])
+
+	assert.Equal(t, "[example a=value1, b=value2, c=test.png]hello, world[r]hello, world", program.String())
+}
+
+func TestParseText(t *testing.T) {
+	input := `hello, world1
+hello, world2
+[p]
+hello, world3
+`
+
+	l := lexer.NewLexer(input)
+	p := NewParser(l)
+	program, err := p.ParseProgram()
+	assert.NoError(t, err)
+
+	assert.Equal(t, "hello, world1hello, world2[p]hello, world3", program.String())
 }
 
 func TestParseCmdExpression_シンタックスエラーを捕捉できる(t *testing.T) {
