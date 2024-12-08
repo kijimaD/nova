@@ -2,8 +2,9 @@ package event
 
 import (
 	"fmt"
-	"log"
 	"time"
+
+	"github.com/kijimaD/nova/logger"
 )
 
 type Event interface {
@@ -69,7 +70,7 @@ func (e *MsgEmit) Before(q *Queue) {
 			q.OnAnim = true
 
 			q.popChan <- struct{}{}
-			log.Println("popChan通知@スキップ")
+			logger.MyLog.Debug("popChan通知@スキップ")
 
 			return
 		default:
@@ -85,7 +86,7 @@ func (e *MsgEmit) Before(q *Queue) {
 	q.OnAnim = true
 
 	q.popChan <- struct{}{}
-	log.Println("popChan通知@順当")
+	logger.MyLog.Debug("popChan通知@順当")
 
 	return
 }
@@ -96,7 +97,7 @@ func (e *MsgEmit) After(q *Queue) {
 		// close
 		if !ok {
 			q.popChan <- struct{}{}
-			fmt.Println("popChan通知@Run/MsgEmit")
+			logger.MyLog.Debug("popChan通知@Run/MsgEmit")
 		}
 	default:
 		// チャネルがクローズされているわけでもなく、値もまだ来ていない
@@ -123,7 +124,7 @@ func (c *Flush) After(q *Queue) {
 	q.buf = ""
 
 	q.popChan <- struct{}{}
-	fmt.Println("popChan通知@Flush")
+	logger.MyLog.Debug("popChan通知@Flush")
 	q.wg.Add(1)
 }
 
@@ -144,7 +145,7 @@ func (l *LineEndWait) After(q *Queue) {
 	q.buf += "\n"
 
 	q.popChan <- struct{}{}
-	fmt.Println("popChan通知@LineEndWait")
+	logger.MyLog.Debug("popChan通知@LineEndWait")
 	q.wg.Add(1)
 }
 

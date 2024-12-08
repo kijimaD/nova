@@ -1,9 +1,10 @@
 package event
 
 import (
-	"fmt"
 	"log"
 	"sync"
+
+	"github.com/kijimaD/nova/logger"
 )
 
 // queueて名前、おかしいかもしれない
@@ -72,7 +73,7 @@ func (q *Queue) Start() {
 						q.wg.Done()
 					} else {
 						q.popChan <- struct{}{}
-						fmt.Println("popChan通知@notIsWait")
+						logger.MyLog.Debug("popChan通知@notIsWait")
 					}
 				}
 			}
@@ -88,7 +89,7 @@ func (q *Queue) Start() {
 	q.wg.Add(1)
 	// 初回Popは初期値を確実にセットするために即時実行する
 	q.Pop()
-	fmt.Println("popChan通知@初回")
+	logger.MyLog.Debug("popChan通知@初回")
 }
 
 func (q *Queue) Play(label string) error {
