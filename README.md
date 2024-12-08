@@ -2,8 +2,32 @@
 
 ## 動作例
 
-- https://kijimad.github.io/nova/ アプリケーション
-- https://github.com/kijimaD/nova/tree/main/_example ソースコード
+- https://kijimad.github.io/nova/ サンプルアプリ
+  - https://github.com/kijimaD/nova/tree/main/_example コード
+- https://kijimad.github.io/na2me/ 青空文庫ビューワ
+  - https://github.com/kijimaD/na2me コード
+
+## シナリオファイル例
+
+```
+*start
+[image source="black.png"]
+『吾輩は猫である』夏目漱石
+[p]
+[jump target="ch1"]
+
+*ch1
+一
+[p]
+[image source="sky.jpg"]
+[wait time="500"]
+
+吾輩は猫である。名前はまだ無い。
+[p]
+どこで生れたかとんと見当がつかぬ。何でも薄暗いじめじめした所でニャーニャー泣いていた事だけは記憶している。
+[p]
+[jump target="start"]
+```
 
 ## 記法
 
