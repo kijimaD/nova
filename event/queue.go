@@ -61,13 +61,12 @@ func (q *Queue) Start() {
 			case event := <-q.workerChan:
 				event.Before(q)
 
-				_, isMsgEmit := event.(*MsgEmit)
-				// msgEmitはevent内で処理するのでここでは処理がいらない
-				if !isMsgEmit {
+				_, isSkip := event.(Skipper)
+				// スキップ可能イベントはevent内で処理するのでここでは処理がいらない
+				if !isSkip {
 					// クリック待ちするイベントではDoneを発行する
-					_, isWait := event.(*LineEndWait)
-					_, isFlush := event.(*Flush)
-					if isWait || isFlush {
+					_, isBlock := event.(Blocker)
+					if isBlock {
 						q.wg.Done()
 					} else {
 						q.popChan <- struct{}{}

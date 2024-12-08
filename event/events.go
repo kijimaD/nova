@@ -7,16 +7,22 @@ import (
 )
 
 type Event interface {
-	// クリック前
+	// クリック前に実行するフック
 	Before(*Queue)
-	// クリック後
+	// クリック後に実行するフック
 	After(*Queue)
+	// デバッグ時に表示する文字列
 	String() string
 }
 
 // アニメーション状態を持ち、スキップ可能なイベント
 type Skipper interface {
 	Skip()
+}
+
+// クリック待ちにするイベント
+type Blocker interface {
+	IsBlock()
 }
 
 // ================
@@ -44,8 +50,8 @@ func (e *MsgEmit) String() string {
 	return fmt.Sprintf("<MsgEmit %s>", e.Body)
 }
 
+// 実行中タスクに合わせてPop()もしくはSkip()する
 // 文字送り中か文字表示完了かの2通りの状態がある
-// 表示終了したら完了チャンネルにフラグを送る
 func (e *MsgEmit) Before(q *Queue) {
 	lineLen := 24
 
@@ -121,6 +127,8 @@ func (c *Flush) After(q *Queue) {
 	q.wg.Add(1)
 }
 
+func (c *Flush) IsBlock() {}
+
 // ================
 
 // クリック待ちにして、クリックしたあとに改行する
@@ -139,6 +147,8 @@ func (l *LineEndWait) After(q *Queue) {
 	fmt.Println("popChan通知@LineEndWait")
 	q.wg.Add(1)
 }
+
+func (l *LineEndWait) IsBlock() {}
 
 // ================
 
