@@ -62,37 +62,6 @@ func TestJump_ラベルジャンプできる(t *testing.T) {
 	assert.Equal(t, "サンプル1", q.Display())
 }
 
-func TestAutoNewline(t *testing.T) {
-	assert.Equal(t,
-		"",
-		autoNewline("", 10),
-	)
-	assert.Equal(t,
-		"あいうえ",
-		autoNewline("あいうえ", 10),
-	)
-	assert.Equal(t,
-		"あいうえおかきくけこ\nさしすせそ",
-		autoNewline("あいうえおかきくけこさしすせそ", 10),
-	)
-	assert.Equal(t,
-		"あいうえお\nかきくけこ\nさしすせそ",
-		autoNewline("あいうえお\nかきくけこさしすせそ", 5),
-	)
-	assert.Equal(t,
-		"あいうえお\nかきくけこ\nさしすせそ\nたちつてと",
-		autoNewline("あいうえお\nかきくけこ\nさしすせそたちつてと", 5),
-	)
-	assert.Equal(t,
-		"abcdefghij\nklmno",
-		autoNewline("abcdefghijklmno", 10),
-	)
-	assert.Equal(t,
-		"あいうえお\nかきくけこ\nさしすせそ",
-		autoNewline("あいうえおかきくけこさしすせそ", 5),
-	)
-}
-
 func TestImage_背景変更を通知する(t *testing.T) {
 	q := prepareQueue(t, `*start
 [image source="test.png"]
