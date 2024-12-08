@@ -93,7 +93,7 @@ func (q *Queue) Start() {
 
 func (q *Queue) Play(label string) error {
 	q.CurrentLabel = label
-	err := q.Evaluator.Play(label)
+	err := q.Evaluator.play(label)
 	if err != nil {
 		return err
 	}

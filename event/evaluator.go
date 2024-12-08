@@ -84,7 +84,7 @@ func (e *Evaluator) Eval(node ast.Node) Event {
 }
 
 // 指定ラベルの内容でEventsを更新する
-func (e *Evaluator) Play(key string) error {
+func (e *Evaluator) play(key string) error {
 	label, err := e.LabelMaster.GetLabel(key)
 	if err != nil {
 		return fmt.Errorf(`指定ラベルが存在しない "%s"`, key)

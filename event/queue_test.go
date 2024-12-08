@@ -8,10 +8,29 @@ import (
 
 func TestPlay_指定ラベルを読み込める(t *testing.T) {
 	q := prepareQueue(t, `*start
-xxx`)
-	err := q.Play("start")
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(q.WaitingQueue))
+xxx
+[p]
+*example1
+yyy
+[p]
+*example2
+zzz
+[p]`)
+	q.Start()
+
+	q.Run()
+	q.Wait()
+	assert.Equal(t, "xxx", q.Display())
+
+	assert.NoError(t, q.Play("example1"))
+	q.Run()
+	q.Wait()
+	assert.Equal(t, "yyy", q.Display())
+
+	assert.NoError(t, q.Play("example2"))
+	q.Run()
+	q.Wait()
+	assert.Equal(t, "zzz", q.Display())
 }
 
 func TestPlay_指定ラベルが存在しないとエラーを返す(t *testing.T) {
