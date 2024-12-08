@@ -85,7 +85,8 @@ func (q *Queue) Start() {
 	}()
 
 	q.wg.Add(1)
-	q.popChan <- struct{}{}
+	// 初回Popは初期値を確実にセットするために即時実行する
+	q.Pop()
 	fmt.Println("popChan通知@初回")
 }
 
@@ -126,25 +127,7 @@ func (q *Queue) Skip() {
 // 非ブロックのイベントでは、自動でPopするのでこの関数を通過しない
 func (q *Queue) Run() {
 	q.OnAnim = false
-	switch v := q.cur.(type) {
-	case *MsgEmit:
-		select {
-		case _, ok := <-v.DoneChan:
-			// close
-			if !ok {
-				q.popChan <- struct{}{}
-				fmt.Println("popChan通知@Run/MsgEmit")
-			}
-		default:
-			// チャネルがクローズされているわけでもなく、値もまだ来ていない
-			q.Skip()
-		}
-	case *LineEndWait, *Flush:
-		v.After(q)
-		q.popChan <- struct{}{}
-		fmt.Println("popChan通知@Run")
-		q.wg.Add(1)
-	}
+	q.cur.After(q)
 }
 
 // すべてのジョブが処理されるまで待機

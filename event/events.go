@@ -85,7 +85,19 @@ func (e *MsgEmit) Before(q *Queue) {
 	return
 }
 
-func (e *MsgEmit) After(q *Queue) {}
+func (e *MsgEmit) After(q *Queue) {
+	select {
+	case _, ok := <-e.DoneChan:
+		// close
+		if !ok {
+			q.popChan <- struct{}{}
+			fmt.Println("popChan通知@Run/MsgEmit")
+		}
+	default:
+		// チャネルがクローズされているわけでもなく、値もまだ来ていない
+		e.Skip()
+	}
+}
 
 // 直近の行を見て、横幅を超えていたら改行
 func autoNewline(buf string, chunkSize int) string {
@@ -130,8 +142,11 @@ func (c *Flush) String() string {
 func (c *Flush) Before(q *Queue) {}
 
 func (c *Flush) After(q *Queue) {
-	fmt.Println("flush after")
 	q.buf = ""
+
+	q.popChan <- struct{}{}
+	fmt.Println("popChan通知@Flush")
+	q.wg.Add(1)
 }
 
 // ================
@@ -147,6 +162,10 @@ func (l *LineEndWait) Before(q *Queue) {}
 
 func (l *LineEndWait) After(q *Queue) {
 	q.buf += "\n"
+
+	q.popChan <- struct{}{}
+	fmt.Println("popChan通知@LineEndWait")
+	q.wg.Add(1)
 }
 
 // ================
