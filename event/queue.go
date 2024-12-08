@@ -144,6 +144,12 @@ func (q *Queue) Display() string {
 	return q.buf
 }
 
-func (q *Queue) SetEvents(es []Event) {
-	q.Evaluator.Events = es
+// for debug
+func (q *Queue) DumpQueue() []string {
+	result := []string{}
+	for _, e := range q.EventQueue {
+		result = append(result, e.String())
+	}
+
+	return result
 }
