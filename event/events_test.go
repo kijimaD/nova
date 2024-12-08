@@ -5,15 +5,14 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/kijimaD/nova/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMsgEmit_Skipできる(t *testing.T) {
 	q := prepareQueue(t, `*start
-first
-[p]
-last`)
+first[p]
+last[l]
+`)
 	q.Start()
 
 	assert.Equal(t, "", q.Display())
@@ -23,46 +22,24 @@ last`)
 	q.Skip()
 	q.Wait()
 	assert.Equal(t, "first", q.Display())
-	q.Pop()
+	q.Run()
 	q.Wait()
 	assert.Equal(t, "last", q.Display())
 }
 
-func TestMsgEmit_イベントを消費する(t *testing.T) {
-	t.Skip("未実装")
-	evaluator := Evaluator{}
-	q := NewQueue(&evaluator)
-	q.Evaluator.Events = append(q.Evaluator.Events,
-		utils.GetPtr(NewMsgEmit("あい")),
-		utils.GetPtr(NewMsgEmit("うえ")),
-		utils.GetPtr(NewMsgEmit("おか")),
-	)
-	q.Start()
-
-	q.Run()
-	q.Wait()
-	assert.Equal(t, "あいうえおか", q.Display())
-}
-
-func TestJump_複数実行できる(t *testing.T) {
+func TestMsgEmit_Skipを使わずに時間経過でも表示できる(t *testing.T) {
 	q := prepareQueue(t, `*start
-サンプル1
-サンプル2[p]
-新文章`)
+あい
+[l]
+うえ
+[l]`)
 	q.Start()
 
-	assert.Equal(t, "", q.Display())
-	q.Run() // run
-	assert.Equal(t, "", q.Display())
-	q.Wait()
-	assert.Equal(t, "サンプル1", q.Display())
-	q.Run() // pop
-	assert.Equal(t, "サンプル1", q.Display())
-	q.Wait()
-	assert.Equal(t, "サンプル1サンプル2", q.Display())
+	time.Sleep(50 * time.Millisecond) // アニメーション時間経過
+	assert.Equal(t, "あい", q.Display())
 	q.Run()
-	q.Wait()
-	assert.Equal(t, "新文章", q.Display())
+	time.Sleep(50 * time.Millisecond) // アニメーション時間経過
+	assert.Equal(t, "あい\nうえ", q.Display())
 }
 
 func TestJump_ラベルジャンプできる(t *testing.T) {
@@ -72,49 +49,17 @@ func TestJump_ラベルジャンプできる(t *testing.T) {
 *ignore
 これは無視
 *sample
-サンプル1`)
+サンプル1[l]`)
 	q.Start()
 
 	assert.Equal(t, "", q.Display())
-	q.Run() // skip
+	q.Run()
 	assert.Equal(t, "", q.Display())
 	q.Wait()
 	assert.Equal(t, "スタート", q.Display())
-	q.Run() // pop (->jump)
-	assert.Equal(t, "スタート", q.Display())
+	q.Run()
 	q.Wait()
 	assert.Equal(t, "サンプル1", q.Display())
-}
-
-func TestAutoNewline(t *testing.T) {
-	assert.Equal(t,
-		"",
-		autoNewline("", 10),
-	)
-	assert.Equal(t,
-		"あいうえ",
-		autoNewline("あいうえ", 10),
-	)
-	assert.Equal(t,
-		"あいうえおかきくけこ\nさしすせそ",
-		autoNewline("あいうえおかきくけこさしすせそ", 10),
-	)
-	assert.Equal(t,
-		"あいうえお\nかきくけこ\nさしすせそ",
-		autoNewline("あいうえお\nかきくけこさしすせそ", 5),
-	)
-	assert.Equal(t,
-		"あいうえお\nかきくけこ\nさしすせそ\nたちつてと",
-		autoNewline("あいうえお\nかきくけこ\nさしすせそたちつてと", 5),
-	)
-	assert.Equal(t,
-		"abcdefghij\nklmno",
-		autoNewline("abcdefghijklmno", 10),
-	)
-	assert.Equal(t,
-		"あいうえお\nかきくけこ\nさしすせそ",
-		autoNewline("あいうえおかきくけこさしすせそ", 5),
-	)
 }
 
 func TestImage_背景変更を通知する(t *testing.T) {
@@ -127,27 +72,27 @@ func TestImage_背景変更を通知する(t *testing.T) {
 	q.Start()
 
 	assert.Equal(t, "", q.Display())
-	q.Run() // pop
+	q.Run()
 	q.Wait()
 
 	receivedEvent := <-q.NotifyChan
 	assert.Equal(t, &ChangeBg{Source: "test.png"}, receivedEvent)
 
 	assert.Equal(t, "スタート", q.Display())
-	q.Run() // pop
+	q.Run()
 	q.Wait()
 	assert.Equal(t, "ああああ", q.Display())
 }
 
-// TODO: 一発で流れてほしい
 func TestNewline_改行できる(t *testing.T) {
-	t.Skip("未実装")
-
 	q := prepareQueue(t, `*start
-あ[r]い[r]う[r]え[r]お[r]`)
+あああ[r][r][r]ううう[p][r]えええ[r]おおお[r][l]`)
 	q.Start()
 
 	q.Run()
 	q.Wait()
-	assert.Equal(t, "あ\nい\nう\nえ\nお\n", q.Display())
+	assert.Equal(t, "あああ\n\n\nううう", q.Display())
+	q.Run()
+	q.Wait()
+	assert.Equal(t, "\nえええ\nおおお\n", q.Display())
 }

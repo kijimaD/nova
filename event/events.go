@@ -2,18 +2,27 @@ package event
 
 import (
 	"fmt"
-	"strings"
+	"log"
 	"time"
 )
 
 type Event interface {
-	Run(*Queue)
+	// クリック前に実行するフック
+	Before(*Queue)
+	// クリック後に実行するフック
+	After(*Queue)
+	// デバッグ時に表示する文字列
 	String() string
 }
 
 // アニメーション状態を持ち、スキップ可能なイベント
 type Skipper interface {
 	Skip()
+}
+
+// クリック待ちにするイベント
+type Blocker interface {
+	IsBlock()
 }
 
 // ================
@@ -41,65 +50,58 @@ func (e *MsgEmit) String() string {
 	return fmt.Sprintf("<MsgEmit %s>", e.Body)
 }
 
-// 表示中か表示終了かで2通りの状態がある
-// 表示終了したら完了チャンネルにフラグを送る
-func (e *MsgEmit) Run(q *Queue) {
+// 実行中タスクに合わせてPop()もしくはSkip()する
+// 文字送り中か文字表示完了かの2通りの状態がある
+func (e *MsgEmit) Before(q *Queue) {
+	lineLen := 24
+
 	for i, char := range e.Body {
 		select {
 		case _, ok := <-e.DoneChan:
 			// フラグが立ったら残りの文字を一気に表示
-			if ok {
-				q.buf += e.Body[i:]
-				q.buf = autoNewline(q.buf, 24)
-				q.wg.Done()
+			if !ok {
+				continue
 			}
-			// FIXME: チェックによってチャンネルの値を消費したが、workerのselect文で必要なので再度通知する...
-			// closeしたほうがいいのかもしれないが、closeがかぶることがあり、その回避のためコードがわかりにくくなるので、再度通知を送ることにした
-			e.DoneChan <- true
+			q.buf += e.Body[i:]
+			q.buf = autoNewline(q.buf, lineLen)
+
+			close(e.DoneChan)
 			q.OnAnim = true
+
+			q.popChan <- struct{}{}
+			log.Println("popChan通知@スキップ")
 
 			return
 		default:
 			// フラグが立ってないので1文字ずつ表示
 			q.buf += string(char)
-			q.buf = autoNewline(q.buf, 24)
+			q.buf = autoNewline(q.buf, lineLen)
 			time.Sleep(messageSpeed)
 		}
 	}
 
 	// 1文字ずつ表示し終わった場合
-	e.DoneChan <- true
+	close(e.DoneChan)
 	q.OnAnim = true
-	q.wg.Done()
+
+	q.popChan <- struct{}{}
+	log.Println("popChan通知@順当")
 
 	return
 }
 
-// 直近の行を見て、横幅を超えていたら改行
-func autoNewline(buf string, chunkSize int) string {
-	split := strings.Split(buf, "\n")
-	last := split[len(split)-1]
-
-	var latestLine strings.Builder
-	runes := []rune(last)
-	for i, r := range runes {
-		latestLine.WriteRune(r)
-		// 文末の場合は改行を追加しない
-		if (i+1)%chunkSize == 0 && i+1 != len(runes) {
-			latestLine.WriteString("\n")
+func (e *MsgEmit) After(q *Queue) {
+	select {
+	case _, ok := <-e.DoneChan:
+		// close
+		if !ok {
+			q.popChan <- struct{}{}
+			fmt.Println("popChan通知@Run/MsgEmit")
 		}
+	default:
+		// チャネルがクローズされているわけでもなく、値もまだ来ていない
+		e.Skip()
 	}
-
-	var result string
-	if len(split) > 1 {
-		// 加工した末尾以外は元に戻す
-		original := strings.Join(split[0:len(split)-1], "\n")
-		result = original + "\n" + latestLine.String()
-	} else {
-		result = latestLine.String()
-	}
-
-	return result
 }
 
 func (e *MsgEmit) Skip() {
@@ -108,37 +110,49 @@ func (e *MsgEmit) Skip() {
 
 // ================
 
-// ページをフラッシュする
+// クリック待ちにして、クリックしたあとにフラッシュする
 type Flush struct{}
 
 func (c *Flush) String() string {
 	return "<Flush>"
 }
 
-func (c *Flush) Run(q *Queue) {
+func (c *Flush) Before(q *Queue) {}
+
+func (c *Flush) After(q *Queue) {
 	q.buf = ""
 
-	return
+	q.popChan <- struct{}{}
+	fmt.Println("popChan通知@Flush")
+	q.wg.Add(1)
 }
+
+func (c *Flush) IsBlock() {}
 
 // ================
 
-// 行末クリック待ち
+// クリック待ちにして、クリックしたあとに改行する
 type LineEndWait struct{}
 
 func (l *LineEndWait) String() string {
 	return "<LineEndWait>"
 }
 
-func (l *LineEndWait) Run(q *Queue) {
+func (l *LineEndWait) Before(q *Queue) {}
+
+func (l *LineEndWait) After(q *Queue) {
 	q.buf += "\n"
 
-	return
+	q.popChan <- struct{}{}
+	fmt.Println("popChan通知@LineEndWait")
+	q.wg.Add(1)
 }
+
+func (l *LineEndWait) IsBlock() {}
 
 // ================
 
-// 背景変更待ち
+// 背景変更
 type ChangeBg struct {
 	Source string
 }
@@ -147,11 +161,13 @@ func (c *ChangeBg) String() string {
 	return fmt.Sprintf("<ChangeBg %s>", c.Source)
 }
 
-func (c *ChangeBg) Run(q *Queue) {
+func (c *ChangeBg) Before(q *Queue) {
 	q.NotifyChan <- c
 
 	return
 }
+
+func (c *ChangeBg) After(q *Queue) {}
 
 // ================
 
@@ -164,11 +180,13 @@ func (w *Wait) String() string {
 	return fmt.Sprintf("<Wait %s>", w.DurationMsec)
 }
 
-func (w *Wait) Run(q *Queue) {
+func (w *Wait) Before(q *Queue) {
 	time.Sleep(w.DurationMsec)
 
 	return
 }
+
+func (w *Wait) After(q *Queue) {}
 
 // ================
 
@@ -181,11 +199,19 @@ func (j *Jump) String() string {
 	return fmt.Sprintf("<Jump %s>", j.Target)
 }
 
-func (j *Jump) Run(q *Queue) {
+func (j *Jump) Before(q *Queue) {
 	q.Play(j.Target)
 
 	return
 }
+
+func (j *Jump) After(q *Queue) {
+	q.Play(j.Target)
+
+	return
+}
+
+// ================
 
 type Newline struct{}
 
@@ -193,11 +219,13 @@ func (n *Newline) String() string {
 	return "<Newline>"
 }
 
-func (n *Newline) Run(q *Queue) {
+func (n *Newline) Before(q *Queue) {
 	q.buf += "\n"
 
 	return
 }
+
+func (n *Newline) After(q *Queue) {}
 
 // ================
 
@@ -208,6 +236,6 @@ func (l *NotImplement) String() string {
 	return "NotImplement"
 }
 
-func (l *NotImplement) Run(q *Queue) {
-	return
-}
+func (l *NotImplement) Before(q *Queue) {}
+
+func (l *NotImplement) After(q *Queue) {}
