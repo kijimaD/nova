@@ -2,7 +2,6 @@ package event
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -23,41 +22,29 @@ xxx`)
 	assert.Equal(t, 0, len(q.EventQueue))
 }
 
-func TestRun_RunがPopとSkipを使い分ける(t *testing.T) {
+func TestRun_PopとSkipを使い分ける(t *testing.T) {
 	q := prepareQueue(t, `*start
-東京1東京2東京3東京4東京5東京6東京7東京8東京9東京10東京11東京12
-[p]
+xxx
+[l][p]
 last
+[l][p]
 `)
 	q.Start()
 
 	assert.Equal(t, "", q.Display())
-	q.Run() // skip
+	q.Run()
 	q.Wait()
-	assert.Equal(t, "東京1東京2東京3東京4東京5東京6東京7東京8\n東京9東京10東京11東京12", q.Display())
-	q.Run() // pop
+	assert.Equal(t, "xxx", q.Display())
+	q.Run()
 	q.Wait()
 	assert.Equal(t, "last", q.Display())
 }
 
-func TestRun_Skipを使わずに時間経過でも1回のRunで次のイベントに遷移する(t *testing.T) {
-	q := prepareQueue(t, `*start
-あい
-うえ`)
-	q.Start()
-
-	time.Sleep(50 * time.Millisecond) // アニメーション時間経過
-	assert.Equal(t, "あい", q.Display())
-	q.Run() // pop
-	q.Wait()
-	assert.Equal(t, "あいうえ", q.Display())
-}
-
 func TestWorker_startラベルから開始する(t *testing.T) {
 	q := prepareQueue(t, `*ignore
-無視するべき
+無視するべき[l]
 *start
-スタート`)
+スタート[l]`)
 	q.Start()
 
 	q.Run()
