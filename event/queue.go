@@ -55,6 +55,8 @@ func (q *Queue) Start() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// ブロックしないイベントまで進める
 	go func() {
 		for {
 			select {
@@ -62,7 +64,7 @@ func (q *Queue) Start() {
 				event.Before(q)
 
 				_, isSkip := event.(Skipper)
-				// スキップ可能イベントはevent内で処理するのでここでは処理がいらない
+				// スキップ可能イベントはevent内で処理するのでここでは処理しない
 				if !isSkip {
 					// クリック待ちするイベントではDoneを発行する
 					_, isBlock := event.(Blocker)
@@ -107,11 +109,12 @@ func (q *Queue) Play(label string) error {
 // イベント列の先頭をチャンネルに入れて、現在処理中とする。そして処理したイベント列の先頭を切る
 // 名前から想像する挙動は、切り出してからイベントに入れる、であるが...
 func (q *Queue) Pop() {
-	if len(q.EventQueue) > 0 {
-		q.cur = q.EventQueue[0]
-		q.workerChan <- q.cur
-		q.EventQueue = q.EventQueue[1:]
+	if len(q.EventQueue) == 0 {
+		return
 	}
+	q.cur = q.EventQueue[0]
+	q.workerChan <- q.cur
+	q.EventQueue = q.EventQueue[1:]
 }
 
 // 現在処理中の、スキップ可能なタスクをスキップする
@@ -121,7 +124,7 @@ func (q *Queue) Skip() {
 	}
 }
 
-// クリックを押したときに実行される想定
+// クリックを押したときに実行する想定
 // 実行中タスクに合わせてPop()もしくはSkip()する
 // 非ブロックのイベントでは、自動でPopするのでこの関数を通過しない
 func (q *Queue) Run() {
