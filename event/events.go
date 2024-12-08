@@ -2,6 +2,7 @@ package event
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 )
@@ -55,9 +56,12 @@ func (e *MsgEmit) Run(q *Queue) {
 			}
 			q.buf += e.Body[i:]
 			q.buf = autoNewline(q.buf, lineLen)
-			q.wg.Done()
+
 			close(e.DoneChan)
 			q.OnAnim = true
+
+			q.popChan <- struct{}{}
+			log.Println("popChan通知@スキップ")
 
 			return
 		default:
@@ -69,11 +73,11 @@ func (e *MsgEmit) Run(q *Queue) {
 	}
 
 	// 1文字ずつ表示し終わった場合
-	e.DoneChan <- true
+	close(e.DoneChan)
 	q.OnAnim = true
-	q.wg.Done()
 
-	q.Pop()
+	q.popChan <- struct{}{}
+	log.Println("popChan通知@順当")
 
 	return
 }
@@ -127,6 +131,7 @@ func (c *Flush) Run(q *Queue) {
 // ================
 
 // 行末クリック待ち
+// TODO: 行末ではないように変更したので直す
 type LineEndWait struct{}
 
 func (l *LineEndWait) String() string {
@@ -134,8 +139,6 @@ func (l *LineEndWait) String() string {
 }
 
 func (l *LineEndWait) Run(q *Queue) {
-	q.buf += "\n"
-
 	return
 }
 

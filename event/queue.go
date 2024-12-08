@@ -1,6 +1,7 @@
 package event
 
 import (
+	"fmt"
 	"log"
 	"sync"
 )
@@ -16,19 +17,25 @@ type Queue struct {
 	// クライアント側での実装が必要なイベントを通知するキュー
 	// テキスト関係のイベントはbufに変換され、入らない
 	NotifyChan chan Event
+	// このチャンネルに送られると待ちキューの先頭からイベントを読み込み、待ちキューの先頭を削除する
+	popChan chan struct{}
 	// 現在表示中の文字列
 	// 利用側はこの文字列を表示するだけで、いい感じに表示できる
 	// アニメーション用に1文字ずつ増えていく
 	buf string
 	// 実行中イベント
 	cur Event
-	// WaitGroup
+	// WaitGroup。クリック待ちイベントに到達するまでで1つの単位としている。そのため複数グループをまたぐ可能性がある
+	// テストでWait()して確認しやすくする
 	wg sync.WaitGroup
 	// アニメーション待ち状態かどうか
 	OnAnim bool
 
+	// 現在実行中のラベル。クライアントが再生中のラベルを表示するのに使う
 	CurrentLabel string
-	EventQueue   []Event
+	// 実行待ちのイベントキュー。ここにある時点ではまだ実行されているわけではない
+	// TODO: 名前をそれとわかるものに変更する
+	EventQueue []Event
 }
 
 func NewQueue(evaluator *Evaluator) Queue {
@@ -36,6 +43,7 @@ func NewQueue(evaluator *Evaluator) Queue {
 		Evaluator:  evaluator,
 		workerChan: make(chan Event, 1024),
 		NotifyChan: make(chan Event, 1024),
+		popChan:    make(chan struct{}, 1),
 	}
 
 	return q
@@ -55,19 +63,27 @@ func (q *Queue) Start() {
 
 				_, isSkipper := event.(Skipper)
 				if !isSkipper {
-					// ブロックしないイベントは進める
-					q.wg.Done()
-
 					_, isWait := event.(*LineEndWait)
-					if !isWait {
-						q.Pop()
+					if isWait {
+						q.wg.Done()
+					} else {
+						q.popChan <- struct{}{}
+						fmt.Println("popChan通知@notIsWait")
 					}
 				}
 			}
 		}
 	}()
 
-	q.Pop()
+	go func() {
+		for range q.popChan {
+			q.Pop()
+		}
+	}()
+
+	q.wg.Add(1)
+	q.popChan <- struct{}{}
+	fmt.Println("popChan通知@初回")
 }
 
 func (q *Queue) Play(label string) error {
@@ -90,10 +106,7 @@ func (q *Queue) Play(label string) error {
 func (q *Queue) Pop() {
 	if len(q.EventQueue) > 0 {
 		q.cur = q.EventQueue[0]
-		q.wg.Wait()
-		q.wg.Add(1)
 		q.workerChan <- q.cur
-
 		q.EventQueue = q.EventQueue[1:]
 	}
 }
@@ -116,14 +129,17 @@ func (q *Queue) Run() {
 		case _, ok := <-v.DoneChan:
 			// close
 			if !ok {
-				q.Pop()
+				q.popChan <- struct{}{}
+				fmt.Println("popChan通知@Run/MsgEmit")
 			}
 		default:
 			// チャネルがクローズされているわけでもなく、値もまだ来ていない
 			q.Skip()
 		}
 	case *LineEndWait:
-		q.Pop()
+		q.popChan <- struct{}{}
+		fmt.Println("popChan通知@Run/LineEndWait")
+		q.wg.Add(1)
 	}
 }
 

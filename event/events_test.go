@@ -11,9 +11,10 @@ import (
 
 func TestMsgEmit_Skipできる(t *testing.T) {
 	q := prepareQueue(t, `*start
-first
+first[l]
 [p]
-last`)
+last[l]
+`)
 	q.Start()
 
 	assert.Equal(t, "", q.Display())
@@ -23,7 +24,7 @@ last`)
 	q.Skip()
 	q.Wait()
 	assert.Equal(t, "first", q.Display())
-	q.Pop()
+	q.Run()
 	q.Wait()
 	assert.Equal(t, "last", q.Display())
 }
@@ -141,13 +142,14 @@ func TestImage_背景変更を通知する(t *testing.T) {
 
 // TODO: 一発で流れてほしい
 func TestNewline_改行できる(t *testing.T) {
-	t.Skip("未実装")
-
 	q := prepareQueue(t, `*start
-あ[r]い[r]う[r]え[r]お[r]`)
+あああ[r][r][r]ううう[l][p][r]えええ[r]おおお[r][l]`)
 	q.Start()
 
 	q.Run()
 	q.Wait()
-	assert.Equal(t, "あ\nい\nう\nえ\nお\n", q.Display())
+	assert.Equal(t, "あああ\n\n\nううう", q.Display())
+	q.Run()
+	q.Wait()
+	assert.Equal(t, "\nえええ\nおおお\n", q.Display())
 }
