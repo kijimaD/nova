@@ -11,7 +11,7 @@ func TestPlay_指定ラベルを読み込める(t *testing.T) {
 xxx`)
 	err := q.Play("start")
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(q.EventQueue))
+	assert.Equal(t, 1, len(q.WaitingQueue))
 }
 
 func TestPlay_指定ラベルが存在しないとエラーを返す(t *testing.T) {
@@ -19,7 +19,7 @@ func TestPlay_指定ラベルが存在しないとエラーを返す(t *testing.
 xxx`)
 	err := q.Play("not exists")
 	assert.Error(t, err)
-	assert.Equal(t, 0, len(q.EventQueue))
+	assert.Equal(t, 0, len(q.WaitingQueue))
 }
 
 func TestRun_PopとSkipを使い分ける(t *testing.T) {

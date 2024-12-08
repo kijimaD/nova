@@ -34,9 +34,8 @@ type Queue struct {
 
 	// 現在実行中のラベル。クライアントが再生中のラベルを表示するのに使う
 	CurrentLabel string
-	// 実行待ちのイベントキュー。ここにある時点ではまだ実行されているわけではない
-	// TODO: 名前をそれとわかるものに変更する
-	EventQueue []Event
+	// 実行待ちのイベントキュー。ここにある時点ではまだ実行されているわけではない。先頭から実行し、実行済みの要素は削除される
+	WaitingQueue []Event
 }
 
 func NewQueue(evaluator *Evaluator) Queue {
@@ -101,7 +100,7 @@ func (q *Queue) Play(label string) error {
 
 	newQueue := make([]Event, len(q.Evaluator.Events))
 	copy(newQueue, q.Evaluator.Events)
-	q.EventQueue = newQueue
+	q.WaitingQueue = newQueue
 
 	return nil
 }
@@ -110,12 +109,12 @@ func (q *Queue) Play(label string) error {
 // イベント列の先頭をチャンネルに入れて、現在処理中とする。そして処理したイベント列の先頭を切る
 // 名前から想像する挙動は、切り出してからイベントに入れる、であるが...
 func (q *Queue) Pop() {
-	if len(q.EventQueue) == 0 {
+	if len(q.WaitingQueue) == 0 {
 		return
 	}
-	q.cur = q.EventQueue[0]
+	q.cur = q.WaitingQueue[0]
 	q.workerChan <- q.cur
-	q.EventQueue = q.EventQueue[1:]
+	q.WaitingQueue = q.WaitingQueue[1:]
 }
 
 // 現在処理中の、スキップ可能なタスクをスキップする
@@ -150,7 +149,7 @@ func (q *Queue) Display() string {
 // for debug
 func (q *Queue) DumpQueue() []string {
 	result := []string{}
-	for _, e := range q.EventQueue {
+	for _, e := range q.WaitingQueue {
 		result = append(result, e.String())
 	}
 
