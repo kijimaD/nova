@@ -8,7 +8,10 @@ import (
 )
 
 type Event interface {
-	Run(*Queue)
+	// クリック前
+	Before(*Queue)
+	// クリック後
+	After(*Queue)
 	String() string
 }
 
@@ -44,7 +47,7 @@ func (e *MsgEmit) String() string {
 
 // 文字送り中か文字表示完了かの2通りの状態がある
 // 表示終了したら完了チャンネルにフラグを送る
-func (e *MsgEmit) Run(q *Queue) {
+func (e *MsgEmit) Before(q *Queue) {
 	lineLen := 24
 
 	for i, char := range e.Body {
@@ -82,6 +85,8 @@ func (e *MsgEmit) Run(q *Queue) {
 	return
 }
 
+func (e *MsgEmit) After(q *Queue) {}
+
 // 直近の行を見て、横幅を超えていたら改行
 func autoNewline(buf string, chunkSize int) string {
 	split := strings.Split(buf, "\n")
@@ -115,36 +120,38 @@ func (e *MsgEmit) Skip() {
 
 // ================
 
-// ページをフラッシュする
+// クリック待ちにして、クリックしたあとにフラッシュする
 type Flush struct{}
 
 func (c *Flush) String() string {
 	return "<Flush>"
 }
 
-func (c *Flush) Run(q *Queue) {
-	q.buf = ""
+func (c *Flush) Before(q *Queue) {}
 
-	return
+func (c *Flush) After(q *Queue) {
+	fmt.Println("flush after")
+	q.buf = ""
 }
 
 // ================
 
-// 行末クリック待ち
-// TODO: 行末ではないように変更したので直す
+// クリック待ちにして、クリックしたあとに改行する
 type LineEndWait struct{}
 
 func (l *LineEndWait) String() string {
 	return "<LineEndWait>"
 }
 
-func (l *LineEndWait) Run(q *Queue) {
-	return
+func (l *LineEndWait) Before(q *Queue) {}
+
+func (l *LineEndWait) After(q *Queue) {
+	q.buf += "\n"
 }
 
 // ================
 
-// 背景変更待ち
+// 背景変更
 type ChangeBg struct {
 	Source string
 }
@@ -153,11 +160,13 @@ func (c *ChangeBg) String() string {
 	return fmt.Sprintf("<ChangeBg %s>", c.Source)
 }
 
-func (c *ChangeBg) Run(q *Queue) {
+func (c *ChangeBg) Before(q *Queue) {
 	q.NotifyChan <- c
 
 	return
 }
+
+func (c *ChangeBg) After(q *Queue) {}
 
 // ================
 
@@ -170,11 +179,13 @@ func (w *Wait) String() string {
 	return fmt.Sprintf("<Wait %s>", w.DurationMsec)
 }
 
-func (w *Wait) Run(q *Queue) {
+func (w *Wait) Before(q *Queue) {
 	time.Sleep(w.DurationMsec)
 
 	return
 }
+
+func (w *Wait) After(q *Queue) {}
 
 // ================
 
@@ -187,11 +198,19 @@ func (j *Jump) String() string {
 	return fmt.Sprintf("<Jump %s>", j.Target)
 }
 
-func (j *Jump) Run(q *Queue) {
+func (j *Jump) Before(q *Queue) {
 	q.Play(j.Target)
 
 	return
 }
+
+func (j *Jump) After(q *Queue) {
+	q.Play(j.Target)
+
+	return
+}
+
+// ================
 
 type Newline struct{}
 
@@ -199,11 +218,13 @@ func (n *Newline) String() string {
 	return "<Newline>"
 }
 
-func (n *Newline) Run(q *Queue) {
+func (n *Newline) Before(q *Queue) {
 	q.buf += "\n"
 
 	return
 }
+
+func (n *Newline) After(q *Queue) {}
 
 // ================
 
@@ -214,6 +235,6 @@ func (l *NotImplement) String() string {
 	return "NotImplement"
 }
 
-func (l *NotImplement) Run(q *Queue) {
-	return
-}
+func (l *NotImplement) Before(q *Queue) {}
+
+func (l *NotImplement) After(q *Queue) {}

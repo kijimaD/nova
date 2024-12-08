@@ -25,9 +25,9 @@ xxx`)
 func TestRun_PopとSkipを使い分ける(t *testing.T) {
 	q := prepareQueue(t, `*start
 xxx
-[l][p]
+[p]
 last
-[l][p]
+[p]
 `)
 	q.Start()
 

@@ -59,12 +59,15 @@ func (q *Queue) Start() {
 		for {
 			select {
 			case event := <-q.workerChan:
-				event.Run(q)
+				event.Before(q)
 
-				_, isSkipper := event.(Skipper)
-				if !isSkipper {
+				_, isMsgEmit := event.(*MsgEmit)
+				// msgEmitはevent内で処理するのでここでは処理がいらない
+				if !isMsgEmit {
+					// クリック待ちするイベントではDoneを発行する
 					_, isWait := event.(*LineEndWait)
-					if isWait {
+					_, isFlush := event.(*Flush)
+					if isWait || isFlush {
 						q.wg.Done()
 					} else {
 						q.popChan <- struct{}{}
@@ -136,9 +139,10 @@ func (q *Queue) Run() {
 			// チャネルがクローズされているわけでもなく、値もまだ来ていない
 			q.Skip()
 		}
-	case *LineEndWait:
+	case *LineEndWait, *Flush:
+		v.After(q)
 		q.popChan <- struct{}{}
-		fmt.Println("popChan通知@Run/LineEndWait")
+		fmt.Println("popChan通知@Run")
 		q.wg.Add(1)
 	}
 }
